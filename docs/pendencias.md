@@ -4,7 +4,7 @@ Bugs e melhorias anotados para corrigir depois.
 
 ## Bugs
 
-### Desligar o console depois do HOME trava em "Saving"
+### ✅ Resolvido: desligar o console trava em "Saving"
 
 - **Como reproduzir:** num jogo, apertar HOME (abre o menu de pausa do
   Our64) e então desligar o console pelo botão POWER.
@@ -29,19 +29,23 @@ Bugs e melhorias anotados para corrigir depois.
   (`ui_redraw`).
 - **Também trava:** POWER em jogo sem HOME antes, e POWER no menu Our ROMs.
   É o mesmo caminho, e isso reforça a suspeita principal.
-- **Correção (a testar no console):** `main()` guarda o pedido do sistema
+- **Correção (confirmada no console em 2026-11-11: menu, em jogo e depois do HOME):** `main()` guarda o pedido do sistema
   (`g_asked`) e, depois de salvar, responde ele mesmo: `ProcUIDrawDoneRelease()`
   para "largar a tela", `WHBProcStopRunning()` para "sair". Linhas de log
   `SYSTEM: ...` em cada etapa do encerramento mostram onde para, se ainda
   parar.
 
-### Texturas "quadriculadas" no Majora's Mask
+### ❎ Não é bug: texturas "quadriculadas" no Majora's Mask
 
-- **Onde:** menu de pausa (Quest Status); a confirmar se também acontece no
-  jogo em si.
-- **Já testado:** `exact-texcoords` não muda nada, então a reescrita do filtro
-  (`fetchTexelFilter`) e o caminho rápido de coordenadas estão descartados.
-- **Suspeitas:** o jogo pede filtro "point" e a renderização a 640×480 transforma
-  cada texel num bloco 2×2; ou quantização de cor para 16 bits sem pontilhado
-  (`enableDitheringQuantization=1`, `enableDitheringPattern=0`).
-- **A coletar:** screenshots em PNG do GamePad (ScreenshotWUPS).
+- **Conclusão (screenshots PNG do GamePad, 2026-11-11):** a textura do Quest
+  Status está com filtro bilinear normal (degradês suaves entre texels, sem
+  blocos nem emendas em grade). O "granulado" é o próprio desenho da pedra,
+  igual no N64. Nas fotos pela câmera, a granulação, os pixels da tela e o
+  reflexo davam a impressão de quadriculado.
+- `exact-texcoords` também não muda nada; o filtro fica como está.
+
+## A investigar
+
+- Caixinha `! e! e! e! e! e!` no canto superior esquerdo de um screenshot em
+  jogo (Majora's Mask). Pode ser a notificação do ScreenshotWUPS com a fonte
+  quebrada ou um aviso do Our64 que não renderizou.
