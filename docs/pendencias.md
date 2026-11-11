@@ -27,8 +27,13 @@ Bugs e melhorias anotados para corrigir depois.
   espera para sempre. Outra possibilidade: o callback de release do WHBGfx
   (`WHBGfxInit`) esbarrando no núcleo gráfico, que ainda desenha
   (`ui_redraw`).
-- **Próximo passo:** linhas de log em cada etapa do fim de `main()` para ver
-  onde para.
+- **Também trava:** POWER em jogo sem HOME antes, e POWER no menu Our ROMs.
+  É o mesmo caminho, e isso reforça a suspeita principal.
+- **Correção (a testar no console):** `main()` guarda o pedido do sistema
+  (`g_asked`) e, depois de salvar, responde ele mesmo: `ProcUIDrawDoneRelease()`
+  para "largar a tela", `WHBProcStopRunning()` para "sair". Linhas de log
+  `SYSTEM: ...` em cada etapa do encerramento mostram onde para, se ainda
+  parar.
 
 ### Texturas "quadriculadas" no Majora's Mask
 

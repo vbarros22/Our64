@@ -139,6 +139,10 @@ void refresh_stat(void) {}
 
 static volatile int g_quit;   /* leaving the game: QUIT_HOME (Wii U Menu), QUIT_SYSTEM or QUIT_ROMS */
 static volatile int g_closing; /* the system asked us to save and close (power button) */
+/* What the system asked in the play loop (a ProcUIStatus), 0 for nothing. That
+ * loop reads the message, so WHBProcIsRunning never sees it again: main
+ * answers it itself once the game has stopped. */
+static int g_asked;
 static uint32_t g_quit_vi;    /* when */
 enum { QUIT_HOME = 1, QUIT_SYSTEM, QUIT_ROMS };
 static char g_rom[512]; /* the ROM folder (up to 300) + '/' + a file name (up to 127): fileBrowser_file.name holds it */
@@ -2258,6 +2262,7 @@ int main(int argc, char **argv)
 				if (st == PROCUI_STATUS_RELEASE_FOREGROUND || st == PROCUI_STATUS_EXITING) {
 					report_line("SYSTEM: told to %s during play (power button?)", st == PROCUI_STATUS_EXITING ? "exit" : "give up the screen");
 					asked = OSGetSystemTime();
+					g_asked = st;
 					g_closing = 1;
 				}
 			}
@@ -2270,7 +2275,9 @@ int main(int argc, char **argv)
 		watchdog_stop();
 	}
 	usbfs_stop(); /* every thread that read a USB file is done */
+	report_line("SYSTEM: USB files closed");
 	audio_stop();
+	report_line("SYSTEM: sound stopped");
 	report_save();
 
 	/* Back to the Wii U Menu on HOME. Dark red: stopped by an error, see
@@ -2288,6 +2295,19 @@ int main(int argc, char **argv)
 		             "Progress since the last good save is not on the card. Free up space on a computer, "
 		             "then play again.", "OUR-0201", 1, "\uE044 Close anyway");
 		input_take_home();
+	}
+	/* The system's request, read in the play loop, answered now that the game
+	 * is saved. Unanswered, WHBProcIsRunning waited for a message the system
+	 * never sent (it waits for this answer first), and a power press left the
+	 * console on the last screen (2026-11-11). */
+	if (g_asked == PROCUI_STATUS_RELEASE_FOREGROUND) {
+		report_line("SYSTEM: letting go of the screen");
+		report_save();
+		ProcUIDrawDoneRelease();
+	} else if (g_asked == PROCUI_STATUS_EXITING) {
+		report_line("SYSTEM: exiting as asked");
+		report_save();
+		WHBProcStopRunning();
 	}
 	int leaving = 0;
 	while (WHBProcIsRunning()) {
@@ -2308,8 +2328,11 @@ int main(int argc, char **argv)
 			ui_redraw();
 		OSSleepTicks(OSMillisecondsToTicks(16)); /* not player_menu_wait: that paces the CPU core's menus */
 	}
+	report_line("SYSTEM: closing");
 	ui_restore_screens();
 	video_thread_stop();
+	report_line("SYSTEM: graphics stopped");
+	report_save();
 	WHBLogUdpDeinit();
 	WHBLogCafeDeinit();
 	WHBProcShutdown();
