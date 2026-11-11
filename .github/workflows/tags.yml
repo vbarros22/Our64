@@ -1,0 +1,11 @@
+name: Tags (temporário)
+on: push
+jobs:
+  tags:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s "https://hub.docker.com/v2/repositories/devkitpro/devkitppc/tags?page_size=60&ordering=last_updated" | jq -r '.results[] | "\(.name) \(.last_updated[:10])"'
+      - run: |
+          curl -s "https://api.github.com/repos/devkitPro/wut/commits?path=include/coreinit/thread.h&per_page=5" | jq -r '.[] | "\(.commit.committer.date[:10]) \(.commit.message|split("\n")[0])"'
+          curl -s "https://api.github.com/repos/devkitPro/wut/commits?path=include/vpad/input.h&per_page=5" | jq -r '.[] | "\(.commit.committer.date[:10]) \(.commit.message|split("\n")[0])"'
