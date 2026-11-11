@@ -10,12 +10,14 @@ on:
 jobs:
   wiiu:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitppc:latest
+    # 20261016: anterior ao wut de 30/10/2026, que mudou OSThreadEntryPointFn,
+    # renomeou VPADStatus.accelorometer etc. e quebra a libgui incluída.
+    container: devkitpro/devkitppc:20261016
     steps:
       - uses: actions/checkout@v4
 
       - name: Pacotes do devkitPro
-        run: dkp-pacman -Syu --noconfirm --needed wiiu-dev ppc-freetype ppc-libpng ppc-libjpeg-turbo ppc-bzip2 ppc-zlib
+        run: dkp-pacman -S --noconfirm --needed wiiu-dev ppc-freetype ppc-libpng ppc-libjpeg-turbo ppc-bzip2 ppc-zlib
 
       - name: CafeGLSL
         run: tools/fetch-cafeglsl.sh
