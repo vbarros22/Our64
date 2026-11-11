@@ -316,7 +316,7 @@ bool startCompileThread()
 	OSInitMutex(&g_jobsMutex);
 	OSInitEvent(&g_jobPosted, FALSE, OS_EVENT_MODE_AUTO);
 	OSInitEvent(&g_jobDone, FALSE, OS_EVENT_MODE_AUTO);
-	if (!OSCreateThread(&g_compileThread, compileMain, 0, nullptr, g_compileStack + sizeof(g_compileStack),
+	if (!OSCreateThread(&g_compileThread, (OSThreadEntryPointFn)compileMain, 0, nullptr, g_compileStack + sizeof(g_compileStack),
 			sizeof(g_compileStack), 24, OS_THREAD_ATTRIB_AFFINITY_CPU2)) {
 		g_compileThreadFailed = true;
 		return false;
@@ -536,7 +536,7 @@ void shaderBench(const char * _dir)
 		fclose(f);
 		for (u32 core : {0u, 1u, 2u}) {
 			BenchRun b{source.c_str(), {}, false};
-			if (!OSCreateThread(&thread, benchMain, 0, reinterpret_cast<char *>(&b), stack + sizeof(stack),
+			if (!OSCreateThread(&thread, (OSThreadEntryPointFn)benchMain, 0, reinterpret_cast<char *>(&b), stack + sizeof(stack),
 					sizeof(stack), 16, OSThreadAttributes(1u << core)))
 				continue;
 			OSResumeThread(&thread);
