@@ -47,7 +47,7 @@ int writer_start(void)
 	OSInitCond(&g_wake);
 	OSInitCond(&g_idle);
 	g_on = 1;
-	if (!OSCreateThread(&g_thread, writer, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 24,
+	if (!OSCreateThread(&g_thread, (OSThreadEntryPointFn)writer, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 24,
 	                    OS_THREAD_ATTRIB_AFFINITY_CPU2)) {
 		g_on = 0;
 		return -1;

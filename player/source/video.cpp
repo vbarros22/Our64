@@ -1343,7 +1343,7 @@ extern "C" int video_thread_start(unsigned core)
 	player_get_memory(&g_mem);
 	OSInitEvent(&g_cmd_event, FALSE, OS_EVENT_MODE_AUTO);
 	OSInitEvent(&g_done_event, FALSE, OS_EVENT_MODE_AUTO);
-	if (!OSCreateThread(&g_thread, graphics_main, 0, nullptr, g_stack + sizeof(g_stack), sizeof(g_stack), 16,
+	if (!OSCreateThread(&g_thread, (OSThreadEntryPointFn)graphics_main, 0, nullptr, g_stack + sizeof(g_stack), sizeof(g_stack), 16,
 	                    OSThreadAttributes(1u << core)))
 		return -1;
 	OSSetThreadName(&g_thread, "Our64 graphics");

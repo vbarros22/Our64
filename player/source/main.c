@@ -911,7 +911,7 @@ static int watchdog(int argc, const char **argv)
 static void watchdog_start(void)
 {
 	g_watch_on = 1;
-	if (OSCreateThread(&g_watch_thread, watchdog, 0, NULL, g_watch_stack + sizeof(g_watch_stack),
+	if (OSCreateThread(&g_watch_thread, (OSThreadEntryPointFn)watchdog, 0, NULL, g_watch_stack + sizeof(g_watch_stack),
 	                   sizeof(g_watch_stack), 20, OS_THREAD_ATTRIB_AFFINITY_CPU2))
 		OSResumeThread(&g_watch_thread);
 }
@@ -2246,7 +2246,7 @@ int main(int argc, char **argv)
 		report_line("No SD card.");
 		show_message("NO SD CARD", "Our64 keeps its games and saves on the SD card. Put the card back in, "
 		             "then start Our64 again.", "OUR-0102", 1, LEGEND_HOME);
-	} else if ((read_test_switches(root), 1) && OSCreateThread(&g_thread, emu_thread, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 16,
+	} else if ((read_test_switches(root), 1) && OSCreateThread(&g_thread, (OSThreadEntryPointFn)emu_thread, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 16,
 	                          (OSThreadAttributes)(1u << core))) {
 		g_playing = 1;
 		OSSetThreadName(&g_thread, "Our64 CPU");

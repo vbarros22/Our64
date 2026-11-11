@@ -885,7 +885,7 @@ static void gb_ready(void)
 	rsp_lle_init(&g_gb_real);
 	OSInitEvent(&g_gb_go, FALSE, OS_EVENT_MODE_AUTO);
 	OSInitEvent(&g_gb_done, FALSE, OS_EVENT_MODE_AUTO);
-	g_gb_thread_ok = OSCreateThread(&g_gb_thread, gb_worker, 0, NULL, g_gb_stack + sizeof(g_gb_stack), sizeof(g_gb_stack),
+	g_gb_thread_ok = OSCreateThread(&g_gb_thread, (OSThreadEntryPointFn)gb_worker, 0, NULL, g_gb_stack + sizeof(g_gb_stack), sizeof(g_gb_stack),
 	                                20, OS_THREAD_ATTRIB_AFFINITY_CPU2);
 	if (g_gb_thread_ok) {
 		OSSetThreadName(&g_gb_thread, "Our64 GB Tower RSP");
@@ -1176,7 +1176,7 @@ static int audio_ready(void)
 	our64_hle_audio_bind((unsigned int *)&g_au_mi, sp, (unsigned int *)&g_au_pc, dpc);
 	OSInitEvent(&g_au_go, FALSE, OS_EVENT_MODE_AUTO);
 	OSInitEvent(&g_au_done, FALSE, OS_EVENT_MODE_AUTO);
-	g_au_on = OSCreateThread(&g_au_thread, audio_worker, 0, NULL, g_au_stack + sizeof(g_au_stack), sizeof(g_au_stack),
+	g_au_on = OSCreateThread(&g_au_thread, (OSThreadEntryPointFn)audio_worker, 0, NULL, g_au_stack + sizeof(g_au_stack), sizeof(g_au_stack),
 	                         18, OS_THREAD_ATTRIB_AFFINITY_CPU2) != 0;
 	if (g_au_on) {
 		OSSetThreadName(&g_au_thread, "Our64 audio RSP");

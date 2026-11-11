@@ -275,7 +275,7 @@ static void loader_start(void)
 	OSInitMutex(&g_load_lock);
 	OSInitCond(&g_load_wake);
 	/* below the menu's priority, on the core the game is not using now */
-	if (OSCreateThread(&g_loader, loader, 0, NULL, g_loader_stack + sizeof(g_loader_stack), sizeof(g_loader_stack), 26,
+	if (OSCreateThread(&g_loader, (OSThreadEntryPointFn)loader, 0, NULL, g_loader_stack + sizeof(g_loader_stack), sizeof(g_loader_stack), 26,
 	                   OS_THREAD_ATTRIB_AFFINITY_CPU2)) {
 		OSSetThreadName(&g_loader, "Our64 covers");
 		OSResumeThread(&g_loader);

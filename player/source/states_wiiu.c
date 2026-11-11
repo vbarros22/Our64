@@ -175,7 +175,7 @@ static void helpers_start(void)
 	for (int i = 0; i < 2; i++) {
 		OSInitEvent(&g_helper[i].go, FALSE, OS_EVENT_MODE_AUTO);
 		OSInitEvent(&g_helper[i].done, FALSE, OS_EVENT_MODE_AUTO);
-		if (!OSCreateThread(&g_helper[i].thread, helper, i, NULL, g_helper_stack[i] + sizeof(g_helper_stack[i]),
+		if (!OSCreateThread(&g_helper[i].thread, (OSThreadEntryPointFn)helper, i, NULL, g_helper_stack[i] + sizeof(g_helper_stack[i]),
 		                    sizeof(g_helper_stack[i]), 1, core[i]))
 			return;
 		OSSetThreadName(&g_helper[i].thread, "Our64 state copy");

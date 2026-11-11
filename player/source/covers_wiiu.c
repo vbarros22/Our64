@@ -346,7 +346,7 @@ int covers_start(const char *root, const covers_game *games, int n)
 	g_result = COVERS_OK;
 	g_stop = 0;
 	/* below the loader (26) and the SD writer (24), on core 2 with them */
-	if (!OSCreateThread(&g_thread, worker, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 28,
+	if (!OSCreateThread(&g_thread, (OSThreadEntryPointFn)worker, 0, NULL, g_stack + sizeof(g_stack), sizeof(g_stack), 28,
 	                    OS_THREAD_ATTRIB_AFFINITY_CPU2)) {
 		free(g_buf);
 		g_buf = NULL;
