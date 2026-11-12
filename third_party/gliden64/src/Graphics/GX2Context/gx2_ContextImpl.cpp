@@ -1999,7 +1999,14 @@ private:
 		if (!clipCopy(src->surface, dst->surface, rect, point))
 			return true;
 		GX2Invalidate(GX2_INVALIDATE_MODE_COLOR_BUFFER, src->surface.image, src->surface.imageSize);
-		if (src->surface.format != dst->surface.format)
+		// Drawn, not GX2CopySurfaceEx (2026-11-12): at native resolution Majora's
+		// Mask's pause copies its 320x240 scene (fbo 117 -> 166, both RGBA8,
+		// blitlog) for the pause background, and the surface copy came out as
+		// diagonal rainbow noise on the console (the same background was right
+		// in gopher64, and at 640x480, where the blit is scaled and GLideN64
+		// draws it). Debug word "surfacecopy" copies with GX2CopySurfaceEx again.
+		const char * dbg = our64_gx2_debug != nullptr ? our64_gx2_debug : "";
+		if (src->surface.format != dst->surface.format || !strstr(dbg, "surfacecopy"))
 			return drawColorCopy(*src, *dst, rect, point);
 		traceBegin("blit color", 0);
 		GX2CopySurfaceEx(&src->surface, 0, 0, &dst->surface, 0, 0, 1, &rect, &point);
