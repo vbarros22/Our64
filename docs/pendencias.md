@@ -53,3 +53,15 @@ Bugs e melhorias anotados para corrigir depois.
 - Log público: as linhas `GX2 debug: ...` e `Texture filter: ...` não aparecem
   no `player-log.txt` da versão pública, então não dá para confirmar se uma
   chave de diagnóstico foi lida.
+
+## Ideias para depois
+
+- **TV look com intensidade:** além de Clean e CRT, opções como "CRT leve" e
+  "CRT forte". O shader já tem os dois parâmetros: `edge` (brilho das bordas
+  da linha, hoje 0,45 a 0,75) e a força da grade (hoje 0,9 a 1,0). Um nível
+  forte teria bordas em ~0,3 a 0,6, com o ganho repondo o brilho do mesmo
+  jeito. A primeira versão (gaussiana sem compensação, bordas na metade)
+  ficou escura demais na TV (2026-11-12).
+- **CRT em TV 1080p:** hoje o quadro CRT é feito em 1280×720 e a cópia para o
+  scan buffer estica para 1080; vale medir se as linhas ficam irregulares e,
+  se ficarem, desenhar direto em 1440×1080 (4,5 linhas da TV por linha do N64).
