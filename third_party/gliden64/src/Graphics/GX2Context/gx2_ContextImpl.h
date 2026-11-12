@@ -14,6 +14,11 @@ GX2ColorBuffer * screenColorBuffer();
 // The screen turned the right way up for the TV (rows top first).
 GX2ColorBuffer * presentColorBuffer();
 
+// Settings > Picture > TV look = CRT: _src (a finished frame, rows top first)
+// drawn at _width x _height with scanlines and a light aperture grille. Null
+// without a context or memory; GLideN64's state is marked to be set again.
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height);
+
 // Ends a frame: waits for the GPU and recycles per-frame memory.
 void endFrame();
 

@@ -530,6 +530,31 @@ static GX2ColorBuffer * shaped(GX2ColorBuffer * frame)
 
 void ui_gfx_screens_changed() { g_card_copies = 0; }
 
+// Settings > Picture > TV look (2026-11-12): CRT draws the TV's frame again
+// at the TV's size with scanlines (gx2::crtColorBuffer); the GamePad keeps the
+// clean frame. Game frames only: the menus are not the game's picture.
+static bool g_crt;
+
+void ui_gfx_set_crt(bool on) { g_crt = on; }
+
+static GX2ColorBuffer * tv_frame(GX2ColorBuffer * frame)
+{
+	if (!g_crt || !video_game_started())
+		return frame;
+	uint32_t w = 1280, h = 720; // a line of 240 is 3 rows; 1080p TVs get it stretched
+	switch (GX2GetSystemTVScanMode()) {
+	case GX2_TV_SCAN_MODE_480I:
+	case GX2_TV_SCAN_MODE_480P:
+		w = 854;
+		h = 480;
+		break;
+	default:
+		break;
+	}
+	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, w, h);
+	return crt != nullptr ? crt : frame;
+}
+
 // GPU profile marks (the frame test's, gx2_ContextImpl.cpp): each names the GPU
 // work since the one before.
 extern "C" void our64_gx2_prof_mark(const char * what);
@@ -559,7 +584,7 @@ void ui_gfx_scan(GX2ColorBuffer * frame)
 		}
 		g_card_swap = swaps + 1;
 	} else {
-		GX2CopyColorBufferToScanBuffer(frame, GX2_SCAN_TARGET_TV);
+		GX2CopyColorBufferToScanBuffer(tv_frame(frame), GX2_SCAN_TARGET_TV);
 		our64_gx2_prof_mark("TV copy");
 	}
 	if (g_mode != MODE_TV) {

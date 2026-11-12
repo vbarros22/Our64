@@ -40,23 +40,23 @@ int  settings_legend(const settings_ui *s, int type, pause_key *keys, int max);
  * Picture row) and Texture filter, each applied with A, on the Settings rows'
  * layout. ---- */
 
-enum { PIC_SCREEN, PIC_SHAPE, PIC_FILTER, PIC_ROWS };
+enum { PIC_SCREEN, PIC_SHAPE, PIC_FILTER, PIC_LOOK, PIC_ROWS };
 typedef struct {
 	int row;
-	int mode, shape, filter;  /* in use */
+	int mode, shape, filter, look; /* in use */
 	int pick[PIC_ROWS];       /* the value left/right is on, per row; A applies it */
 	int gamepad;              /* a GamePad is connected: GamePad only can be picked */
 	int touched;
 } picture_ui;
-enum { PICT_NONE, PICT_BACK, PICT_HOME, PICT_MODE, PICT_SHAPE, PICT_FILTER };
-void picture_open(picture_ui *p, int mode, int shape, int filter, int gamepad);
+enum { PICT_NONE, PICT_BACK, PICT_HOME, PICT_MODE, PICT_SHAPE, PICT_FILTER, PICT_LOOK };
+void picture_open(picture_ui *p, int mode, int shape, int filter, int look, int gamepad);
 int  picture_event(picture_ui *p, int event, int target); /* PICT_MODE/_SHAPE/_FILTER: apply pick[], then picture_applied */
 void picture_applied(picture_ui *p);
 int  picture_values(int row);
 int  picture_in_use(const picture_ui *p, int row);
 int  picture_off(const picture_ui *p, int row, int i); /* greyed: shown, A does nothing */
 const char *picture_value_name(int row, int i);
-const char *picture_row_name(int row);           /* "Screen mode", "Shape", "Texture filter" */
+const char *picture_row_name(int row);           /* "Screen mode", "Shape", "Texture filter", "TV look" */
 const char *picture_row_about(const picture_ui *p);
 int  picture_hit(int x, int y);                  /* row * 8 + value + 1, or row * 8 for the row itself; -1 */
 int  picture_legend(const picture_ui *p, int type, pause_key *keys, int max);

@@ -470,6 +470,9 @@ struct KeptState {
 	GX2DepthBuffer screenDepth = {};
 	Texture dummy;
 	Texture present;
+	Texture crt;                 // the TV look's frame (crtBuffer), at the TV's size
+	GX2DepthBuffer crtDepth = {};
+	GX2Sampler crtSampler = {};
 };
 KeptState g_kept;
 
@@ -563,6 +566,9 @@ public:
 			m_screenDepth = g_kept.screenDepth;
 			m_dummy = g_kept.dummy;
 			m_present = g_kept.present;
+			m_crt = g_kept.crt;
+			m_crtDepth = g_kept.crtDepth;
+			m_crtSampler = g_kept.crtSampler;
 		}
 		if (m_ctx == nullptr) {
 			m_ctx = static_cast<GX2ContextState*>(MEMAllocFromDefaultHeapEx(sizeof(GX2ContextState), GX2_CONTEXT_STATE_ALIGNMENT));
@@ -1284,6 +1290,95 @@ public:
 		return cb;
 	}
 
+	// Settings > Picture > TV look = CRT (2026-11-12): the frame the TV gets,
+	// drawn again at the TV's own size with scanlines and a light aperture
+	// grille. _src is a finished frame, rows top first (a picture copy, after
+	// the 4:3 shaping and the notices). The GamePad keeps the clean frame.
+	GX2ColorBuffer * crtBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height) {
+		if (_src == nullptr || _src->surface.image == nullptr)
+			return nullptr;
+		if (m_crtFailed || (m_crtProgram == 0 && !createCrtProgram())) {
+			m_crtFailed = true; // once: not a compile every frame
+			return nullptr;
+		}
+		if (m_crt.allocated && (m_crt.tex.surface.width != _width || m_crt.tex.surface.height != _height)) {
+			// The TV's mode changed: the old pair goes when the GPU is done with it.
+			freeLater(m_crt.tex.surface.image);
+			if (m_crtDepth.surface.image != nullptr)
+				freeLater(m_crtDepth.surface.image);
+			m_crt = Texture();
+			m_crtDepth = GX2DepthBuffer();
+		}
+		if (!m_crt.allocated) {
+			allocateTexture(m_crt, _width, _height, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8);
+			allocateDepth(m_crtDepth, _width, _height);
+			if (!m_crt.allocated || m_crtDepth.surface.image == nullptr) {
+				if (m_crt.allocated)
+					MEMFreeToDefaultHeap(m_crt.tex.surface.image);
+				if (m_crtDepth.surface.image != nullptr)
+					MEMFreeToDefaultHeap(m_crtDepth.surface.image);
+				m_crt = Texture();
+				m_crtDepth = GX2DepthBuffer();
+				g_kept.crt = m_crt;
+				g_kept.crtDepth = m_crtDepth;
+				return nullptr;
+			}
+			GX2InitSampler(&m_crtSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
+			g_kept.crt = m_crt; // kept with the rest (init)
+			g_kept.crtDepth = m_crtDepth;
+			g_kept.crtSampler = m_crtSampler;
+		}
+		GX2SetContextState(m_ctx);
+		finishRenderTarget();
+		// The frame, read as a texture: the same memory, a texture's view of it.
+		GX2Texture src = GX2Texture();
+		src.surface = _src->surface;
+		src.viewNumMips = 1;
+		src.viewNumSlices = 1;
+		src.compMap = GX2_COMP_MAP(GX2_SQ_SEL_R, GX2_SQ_SEL_G, GX2_SQ_SEL_B, GX2_SQ_SEL_A);
+		GX2InitTextureRegs(&src);
+		GX2Invalidate((GX2InvalidateMode)(GX2_INVALIDATE_MODE_COLOR_BUFFER | GX2_INVALIDATE_MODE_TEXTURE),
+			src.surface.image, src.surface.imageSize);
+		Program * p = currentProgram();
+		glUseProgram(m_crtProgram);
+		Program * crt = currentProgram();
+		GX2ColorBuffer * cb = colorBufferOf(m_crt);
+		GX2SetColorBuffer(cb, GX2_RENDER_TARGET_0);
+		GX2SetDepthBuffer(&m_crtDepth); // unused (no depth test), but the TV's size
+		GX2SetViewport(0.0f, 0.0f, f32(_width), f32(_height), 0.0f, 1.0f);
+		GX2SetScissor(0, 0, _width, _height);
+		GX2SetDepthOnlyControl(FALSE, FALSE, GX2_COMPARE_FUNC_ALWAYS);
+		GX2SetPolygonControl(GX2_FRONT_FACE_CW, FALSE, FALSE, FALSE, GX2_POLYGON_MODE_TRIANGLE,
+			GX2_POLYGON_MODE_TRIANGLE, FALSE, FALSE, FALSE);
+		GX2SetColorControl(GX2_LOGIC_OP_COPY, 0, FALSE, TRUE);
+		GX2SetShaderMode(crt->mode);
+		GX2SetFetchShader(&crt->fetch);
+		GX2SetVertexShader(crt->vs);
+		GX2SetPixelShader(crt->ps);
+		for (const SamplerBinding & s : crt->samplers) {
+			GX2SetPixelTexture(&src, s.location);
+			GX2SetPixelSampler(&m_crtSampler, s.location);
+		}
+		// Rows stay as they are (the source is already top first): v = 0 at the top.
+		static const RectVertex quad[4] = {
+			{-1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+			{ 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f},
+			{-1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+			{ 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+		};
+		RectVertex * v = static_cast<RectVertex*>(ring().alloc(sizeof(quad), 64));
+		memcpy(v, quad, sizeof(quad));
+		attribWritten(v, sizeof(quad));
+		GX2SetAttribBuffer(0, sizeof(quad), sizeof(RectVertex), v);
+		GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, 0, 1);
+		GX2Invalidate(GX2_INVALIDATE_MODE_COLOR_BUFFER, cb->surface.image, cb->surface.imageSize);
+		profMark("TV look: CRT");
+		glUseProgram(p != nullptr ? p->name : 0);
+		m_dirty = m_targetDirty = true;
+		m_lastProgram = nullptr;
+		return cb;
+	}
+
 	// Frames alternate between two rings, so the CPU builds the next frame
 	// while the GPU draws this one. Before a ring is reused, wait only for the
 	// frame that last used it (the previous one); its frees are safe then too.
@@ -1674,6 +1769,58 @@ private:
 			g_kept.present = m_present; // kept with the rest (init)
 		}
 		return m_present.allocated;
+	}
+
+	// The TV look's shader (crtBuffer). The frame doubles each of the N64's
+	// lines (480 rows for 240), so a line is two source rows: each output row
+	// takes its line's color (sampled at the line's middle) and a gaussian
+	// beam across the line, wider for bright colors, darkens the gap between
+	// lines. The brightness the gaps take is made up, and a light aperture
+	// grille (R, G, B a little stronger in turn, column by column) goes over it.
+	// At 720p a line is 3 TV rows; at 1080p the copy to the scan buffer
+	// stretches 720 to 1080.
+	bool createCrtProgram() {
+		const char * vs = "#version 330\nin vec4 aRectPosition;\nin vec2 aTexCoord0;\nout vec2 vUV;\n"
+			"void main() { gl_Position = vec4(aRectPosition.x, -aRectPosition.y, 0.0, 1.0); vUV = aTexCoord0; }\n";
+		const char * ps =
+			"#version 330\n"
+			"uniform sampler2D uTex0;\n"
+			"in vec2 vUV;\n"
+			"out vec4 fragColor;\n"
+			"void main() {\n"
+			"  highp vec2 size = vec2(textureSize(uTex0, 0));\n"
+			"  highp float lines = size.y * 0.5;\n"
+			"  highp float y = vUV.y * lines;\n"
+			"  highp float line = floor(y);\n"
+			"  highp float d = y - line - 0.5;\n"
+			"  vec3 c = texture(uTex0, vec2(vUV.x, (line + 0.5) / lines)).rgb;\n"
+			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
+			"  float w = mix(0.24, 0.42, lum);\n"
+			"  float beam = exp(-0.5 * d * d / (w * w));\n"
+			"  vec3 o = c * beam * mix(1.45, 1.15, lum);\n"
+			"  float m = mod(floor(gl_FragCoord.x), 3.0);\n"
+			"  vec3 mask = vec3(0.88) + 0.12 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
+			"  o *= mask * 1.06;\n"
+			"  fragColor = vec4(min(o, vec3(1.0)), 1.0);\n"
+			"}\n";
+		const GLuint v = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(v, 1, &vs, nullptr);
+		const GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(f, 1, &ps, nullptr);
+		const GLuint program = glCreateProgram();
+		glAttachShader(program, v);
+		glAttachShader(program, f);
+		glLinkProgram(program);
+		glDeleteShader(v);
+		glDeleteShader(f);
+		GLint linked = GL_FALSE;
+		glGetProgramiv(program, GL_LINK_STATUS, &linked);
+		if (linked != GL_TRUE) {
+			gx2::log("CHECK: the TV look's shader did not link\n");
+			return false;
+		}
+		m_crtProgram = program;
+		return true;
 	}
 
 	void createDummyTexture() {
@@ -2833,6 +2980,11 @@ private:
 	Texture m_dummy;
 	Texture m_present;
 	GLuint m_presentProgram = 0;
+	Texture m_crt;
+	GX2DepthBuffer m_crtDepth = {};
+	GX2Sampler m_crtSampler = {};
+	GLuint m_crtProgram = 0;
+	bool m_crtFailed = false;
 	std::unordered_map<u32, Texture> m_textures;
 	std::unordered_map<u32, Framebuffer> m_framebuffers;
 	std::unordered_map<u32, Renderbuffer> m_renderbuffers;
@@ -2998,6 +3150,11 @@ GX2ColorBuffer * screenColorBuffer()
 GX2ColorBuffer * presentColorBuffer()
 {
 	return g_context == nullptr ? nullptr : g_context->presentBuffer();
+}
+
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height)
+{
+	return g_context == nullptr ? nullptr : g_context->crtBuffer(_src, _width, _height);
 }
 
 void endFrame()

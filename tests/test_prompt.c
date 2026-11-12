@@ -127,7 +127,7 @@ static void test_settings_file(void)
 	CHECK(s.layout == LAYOUT_COVERS); /* the default */
 	CHECK(settings_parse("Our ROMs = List\n", &s) == 0 && s.layout == LAYOUT_LIST);
 	our_settings w = { MODE_TV, PICTURE_WIDE, THEME_COMRADE, LAYOUT_LIST, "Dr. Mario 64 (USA).z64", { 1, 0, 1, 1 } };
-	char text[512];
+	char text[2048]; /* as setup_wiiu.c writes it */
 	CHECK(settings_format_all(text, sizeof(text), &w) > 0);
 	CHECK(settings_parse(text, &s) == 0 && s.mode == MODE_TV && s.picture == PICTURE_WIDE && s.theme == THEME_COMRADE && s.layout == LAYOUT_LIST);
 	CHECK(!strcmp(s.last_game, "Dr. Mario 64 (USA).z64") && !s.rumble[1] && s.rumble[2]);
@@ -140,6 +140,13 @@ static void test_settings_file(void)
 	w.filter = FILTER_N64;
 	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nTexture filter = N64\n"));
 	CHECK(settings_parse(text, &s) == 0 && s.filter == FILTER_N64 && s.picture == PICTURE_WIDE && s.theme == THEME_COMRADE);
+	/* TV look: Clean by default, written and read back */
+	CHECK(settings_parse("", &s) == SETTINGS_MISSING && s.look == LOOK_CLEAN);
+	CHECK(settings_parse("TV look = CRT\n", &s) == 0 && s.look == LOOK_CRT);
+	CHECK(settings_parse("TV look = sepia\n", &s) == SETTINGS_DAMAGED && s.look == LOOK_CLEAN);
+	w.look = LOOK_CRT;
+	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nTV look = CRT\n"));
+	CHECK(settings_parse(text, &s) == 0 && s.look == LOOK_CRT && s.filter == FILTER_N64);
 }
 
 static void recent_games_keep_the_last_five_played_newest_first(void)

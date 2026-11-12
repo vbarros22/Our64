@@ -363,7 +363,7 @@ static int run_picture(void)
 	frame_input f;
 	memset(&f, 0, sizeof(f));
 	input_menu_state(&f.m);
-	picture_open(p, ui_mode(), g_settings.picture, g_settings.filter, f.m.type[0] >= 0);
+	picture_open(p, ui_mode(), g_settings.picture, g_settings.filter, g_settings.look, f.m.type[0] >= 0);
 	g_view.screen = SETUP_PICTURE;
 	g_view.line[0] = 0;
 	int touching = 0, target = -1;
@@ -405,6 +405,21 @@ static int run_picture(void)
 				} else {
 					picture_applied(p);
 					snprintf(g_view.line, sizeof(g_view.line), "Shape: %s%s", picture_name(p->shape),
+					         g_from_pause ? ", on Resume" : "");
+				}
+				break;
+			}
+			case PICT_LOOK: { /* on the TV's next frame */
+				int keep = g_settings.look;
+				g_settings.look = p->pick[PIC_LOOK];
+				if (setup_save_settings()) {
+					g_settings.look = keep;
+					p->pick[PIC_LOOK] = p->look;
+					write_failed();
+				} else {
+					picture_applied(p);
+					video_set_crt(p->look == LOOK_CRT);
+					snprintf(g_view.line, sizeof(g_view.line), "TV look: %s%s", look_name(p->look),
 					         g_from_pause ? ", on Resume" : "");
 				}
 				break;
