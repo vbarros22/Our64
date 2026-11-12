@@ -1313,7 +1313,8 @@ public:
 		}
 		if (!m_crt.allocated) {
 			allocateTexture(m_crt, _width, _height, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8);
-			allocateDepth(m_crtDepth, _width, _height);
+			// 16 bits: never tested or written, only the TV's size matters (1.8 MB at 720p, not 3.7).
+			allocateDepth(m_crtDepth, _width, _height, GX2_SURFACE_FORMAT_UNORM_R16);
 			if (!m_crt.allocated || m_crtDepth.surface.image == nullptr) {
 				if (m_crt.allocated)
 					MEMFreeToDefaultHeap(m_crt.tex.surface.image);
@@ -1699,7 +1700,8 @@ private:
 		_t.cbReady = false;
 	}
 
-	void allocateDepth(GX2DepthBuffer & _db, u32 _width, u32 _height) {
+	void allocateDepth(GX2DepthBuffer & _db, u32 _width, u32 _height,
+			GX2SurfaceFormat _format = GX2_SURFACE_FORMAT_FLOAT_R32) {
 		_db = GX2DepthBuffer();
 		GX2Surface & s = _db.surface;
 		s.dim = GX2_SURFACE_DIM_TEXTURE_2D;
@@ -1707,7 +1709,7 @@ private:
 		s.height = _height > 0 ? _height : 1;
 		s.depth = 1;
 		s.mipLevels = 1;
-		s.format = GX2_SURFACE_FORMAT_FLOAT_R32;
+		s.format = _format;
 		s.aa = GX2_AA_MODE1X;
 		s.use = GX2_SURFACE_USE_DEPTH_BUFFER;
 		s.tileMode = GX2_TILE_MODE_DEFAULT;
