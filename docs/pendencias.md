@@ -37,15 +37,19 @@ Bugs e melhorias anotados para corrigir depois.
 
 ### ❎ Não é bug: texturas "quadriculadas" no Majora's Mask
 
-- **Conclusão (screenshots PNG do GamePad, 2026-11-11):** a textura do Quest
-  Status está com filtro bilinear normal (degradês suaves entre texels, sem
-  blocos nem emendas em grade). O "granulado" é o próprio desenho da pedra,
-  igual no N64. Nas fotos pela câmera, a granulação, os pixels da tela e o
-  reflexo davam a impressão de quadriculado.
-- `exact-texcoords` também não muda nada; o filtro fica como está.
+- **Sintoma:** linhas retas de 1 pixel na página do Quest Status (y = 139, 205,
+  271… e x = 344, 509 no GamePad, blocos de ~80×32 texels) e degraus em
+  zigue-zague no topo de troncos.
+- **Testes (screenshots PNG do GamePad, 2026-11-11):** Smooth, N64 (3-point),
+  `rw2` e `exact-texcoords` deixam a página **pixel a pixel idêntica**
+  (`rw2` e `exact-texcoords` contra N64: 100% dos pixels iguais).
+- **Referência:** o ares (RDP fiel ao hardware) mostra os mesmos blocos e o
+  mesmo zigue-zague. É a arte do jogo; a 640×480 só fica mais nítido.
+- Ficou a chave de diagnóstico `vshighp` (vertex shader em `highp`) para
+  casos de emendas que dependam da precisão do vértice.
 
 ## A investigar
 
-- Caixinha `! e! e! e! e! e!` no canto superior esquerdo de um screenshot em
-  jogo (Majora's Mask). Pode ser a notificação do ScreenshotWUPS com a fonte
-  quebrada ou um aviso do Our64 que não renderizou.
+- Log público: as linhas `GX2 debug: ...` e `Texture filter: ...` não aparecem
+  no `player-log.txt` da versão pública, então não dá para confirmar se uma
+  chave de diagnóstico foi lida.
