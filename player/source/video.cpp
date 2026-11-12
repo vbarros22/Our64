@@ -1160,7 +1160,7 @@ void start_on_graphics_core(void * result)
 	// Texture coordinates use GLideN64's simpler shaders: the exact texel
 	// ones take CafeGLSL 3-7 s to compile instead of 0.2 s, and drop pixels
 	// on the Wii U GPU. sd:/wiiu/our64/exact-texcoords switches them back.
-	int copy = 0, async = 1, inexact = 1;
+	int copy = 0, async = 1, inexact = 1, native = 1;
 	if (const char * root = report_sd_root()) {
 		char path[256];
 		snprintf(path, sizeof(path), "%s/copy-color", root);
@@ -1182,6 +1182,16 @@ void start_on_graphics_core(void * result)
 			            g_frame_dump ? " GamePad minus saves screens (frame-dump)" : "");
 		snprintf(path, sizeof(path), "%s/exact-texcoords", root);
 		inexact = stat(path, &st) != 0;
+		// Native resolution (2026-11-12): GLideN64 draws at the game's own
+		// size (most often 320x240) and only the window is 640x480, so copies
+		// of the screen to RDRAM are the console's pixel for pixel. In Majora's
+		// Mask it ended the "scaled or flipped blit" the Wii U's backend can't
+		// do, with VI to TV at most 89 ms in 10 minutes (100-150 before).
+		// sd:/wiiu/our64/render-640x480 draws every game at 640x480 again; a
+		// game's GLideN64.custom.ini entry (frameBufferEmulation\nativeResFactor=0)
+		// wins over both.
+		snprintf(path, sizeof(path), "%s/render-640x480", root);
+		native = stat(path, &st) != 0;
 		snprintf(path, sizeof(path), "%s/present-waits", root);
 		g_present_waits = stat(path, &st) == 0;
 		// sd:/wiiu/our64/pace: this game's presents, swaps and flips recorded
@@ -1196,14 +1206,15 @@ void start_on_graphics_core(void * result)
 			            g_pace_log ? "" : ": no memory for the record");
 		}
 	}
-	static char settings[192];
+	static char settings[224];
 	snprintf(settings, sizeof(settings),
 	         "EnableCopyColorToRDRAM=%d,AsyncShaderCompilation=%d,EnableInaccurateTextureCoordinates=%d,AspectRatio=%d,"
-	         "bilinearMode=%d",
-	         copy, async, inexact, g_aspect, g_n64_filter ? 0 : 1);
+	         "bilinearMode=%d,UseNativeResolutionFactor=%d",
+	         copy, async, inexact, g_aspect, g_n64_filter ? 0 : 1, native ? 1 : 0);
 	our64_config_override(settings);
-	report_line("Color copy to RDRAM: %d (per-game ini entries win). Shaders compile %s. Texture filter: %s.", copy,
-	            async ? "in the background" : "before drawing", g_n64_filter ? "N64 3-point" : "smooth");
+	report_line("Color copy to RDRAM: %d (per-game ini entries win). Shaders compile %s. Texture filter: %s. Drawn at %s.", copy,
+	            async ? "in the background" : "before drawing", g_n64_filter ? "N64 3-point" : "smooth",
+	            native ? "the game's own resolution" : "640x480 (render-640x480)");
 
 	GFX_INFO gi = {};
 	gi.HEADER = g_mem.header;
