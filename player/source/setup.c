@@ -253,7 +253,7 @@ const char *picture_row_about(const picture_ui *p)
 	case PIC_FILTER:
 		return "Smooth: 4-point bilinear. N64: the console's own 3-point filter.";
 	default:
-		return "CRT: scanlines and a light phosphor grille on the TV. The GamePad stays clean.";
+		return "CRT: scanlines and a phosphor grille; Soft CRT also blurs. TV only.";
 	}
 }
 

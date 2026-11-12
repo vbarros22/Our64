@@ -24,6 +24,7 @@
 #include <cstring>
 #include <memory>
 #include <unordered_map>
+#include <string>
 #include <vector>
 
 #include <cafeglsl/CafeGLSLCompiler.h>
@@ -1294,11 +1295,12 @@ public:
 	// drawn again at the TV's own size with scanlines and a light aperture
 	// grille. _src is a finished frame, rows top first (a picture copy, after
 	// the 4:3 shaping and the notices). The GamePad keeps the clean frame.
-	GX2ColorBuffer * crtBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height) {
+	GX2ColorBuffer * crtBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft) {
+		const int k = _soft ? 1 : 0;
 		if (_src == nullptr || _src->surface.image == nullptr)
 			return nullptr;
-		if (m_crtFailed || (m_crtProgram == 0 && !createCrtProgram())) {
-			m_crtFailed = true; // once: not a compile every frame
+		if (m_crtFailed[k] || (m_crtProgram[k] == 0 && !createCrtProgram(k))) {
+			m_crtFailed[k] = true; // once: not a compile every frame
 			return nullptr;
 		}
 		if (m_crt.allocated && (m_crt.tex.surface.width != _width || m_crt.tex.surface.height != _height)) {
@@ -1340,7 +1342,7 @@ public:
 		GX2Invalidate((GX2InvalidateMode)(GX2_INVALIDATE_MODE_COLOR_BUFFER | GX2_INVALIDATE_MODE_TEXTURE),
 			src.surface.image, src.surface.imageSize);
 		Program * p = currentProgram();
-		glUseProgram(m_crtProgram);
+		glUseProgram(m_crtProgram[k]);
 		Program * crt = currentProgram();
 		GX2ColorBuffer * cb = colorBufferOf(m_crt);
 		GX2SetColorBuffer(cb, GX2_RENDER_TARGET_0);
@@ -1782,12 +1784,15 @@ private:
 	// first version (a gaussian, made up by hand) left two of a line's three
 	// TV rows at half (55 against 27 in a dark scene), too dark (2026-11-12).
 	// At 720p a line is 3 TV rows; at 1080p the copy to the scan buffer
-	// stretches 720 to 1080.
-	bool createCrtProgram() {
+	// stretches 720 to 1080. Soft CRT (after the Switch 2's N64 filter, from a
+	// screenshot of it, 2026-11-12): the line's color blurred across about three
+	// N64 pixels (taps 0.75 and 1.5 N64 pixels out), red and blue a little apart (composite-like
+	// fringes), a little of the next line toward the line's borders, softer
+	// scanlines, and the 4:3 picture's corners rounded and darkened.
+	bool createCrtProgram(int _soft) {
 		const char * vs = "#version 330\nin vec4 aRectPosition;\nin vec2 aTexCoord0;\nout vec2 vUV;\n"
 			"void main() { gl_Position = vec4(aRectPosition.x, -aRectPosition.y, 0.0, 1.0); vUV = aTexCoord0; }\n";
-		const char * ps =
-			"#version 330\n"
+		std::string psText = std::string("#version 330\n#define SOFT ") + (_soft ? "1" : "0") + "\n" +
 			"uniform sampler2D uTex0;\n"
 			"in vec2 vUV;\n"
 			"out vec4 fragColor;\n"
@@ -1797,18 +1802,46 @@ private:
 			"  highp float y = vUV.y * lines;\n"
 			"  highp float line = floor(y);\n"
 			"  highp float d = y - line - 0.5;\n"
-			"  vec3 c = texture(uTex0, vec2(vUV.x, (line + 0.5) / lines)).rgb;\n"
+			"  highp float vy = (line + 0.5) / lines;\n"
+			"  float t = 2.0 * d;\n"
+			"#if SOFT\n"
+			"  highp float px = 1.0 / size.x;\n"
+			"  vec3 c = texture(uTex0, vec2(vUV.x - 3.0 * px, vy)).rgb * 0.12\n"
+			"         + texture(uTex0, vec2(vUV.x - 1.5 * px, vy)).rgb * 0.22\n"
+			"         + texture(uTex0, vec2(vUV.x, vy)).rgb * 0.32\n"
+			"         + texture(uTex0, vec2(vUV.x + 1.5 * px, vy)).rgb * 0.22\n"
+			"         + texture(uTex0, vec2(vUV.x + 3.0 * px, vy)).rgb * 0.12;\n"
+			"  c.r = mix(c.r, texture(uTex0, vec2(vUV.x - 2.0 * px, vy)).r, 0.35);\n"
+			"  c.b = mix(c.b, texture(uTex0, vec2(vUV.x + 2.0 * px, vy)).b, 0.35);\n"
+			"  vec3 nb = texture(uTex0, vec2(vUV.x, clamp(vy + sign(d) / lines, 0.0, 1.0))).rgb;\n"
+			"  c = mix(c, nb, 0.3 * abs(t));\n"
+			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
+			"  float edge = mix(0.55, 0.8, lum);\n"
+			"#else\n"
+			"  vec3 c = texture(uTex0, vec2(vUV.x, vy)).rgb;\n"
 			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
 			"  float edge = mix(0.45, 0.75, lum);\n"
-			"  float t = 2.0 * d;\n"
+			"#endif\n"
 			"  float beam = 1.0 - (1.0 - edge) * t * t;\n"
 			"  float gain = 1.0 / (1.0 - (1.0 - edge) / 3.0);\n"
 			"  vec3 o = c * beam * gain;\n"
 			"  float m = mod(floor(gl_FragCoord.x), 3.0);\n"
 			"  vec3 mask = vec3(0.9) + 0.1 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
 			"  o *= mask * (1.0 / 0.9333);\n"
+			"#if SOFT\n"
+			"  highp float gw = min(size.x, size.y * 4.0 / 3.0);\n"
+			"  highp float gx = (vUV.x * size.x - (size.x - gw) * 0.5) / gw;\n"
+			"  vec2 p = (vec2(gx, vUV.y) - 0.5) * vec2(4.0 / 3.0, 1.0);\n"
+			"  vec2 hb = vec2(2.0 / 3.0, 0.5);\n"
+			"  vec2 q = max(abs(p) - hb + 0.035, 0.0);\n"
+			"  float corner = 1.0 - smoothstep(-0.004, 0.0, length(q) - 0.035);\n"
+			"  vec2 n = p / hb;\n"
+			"  float vig = 1.0 - 0.3 * smoothstep(0.3, 1.0, dot(n, n) * 0.5);\n"
+			"  o *= corner * vig;\n"
+			"#endif\n"
 			"  fragColor = vec4(min(o, vec3(1.0)), 1.0);\n"
 			"}\n";
+		const char * ps = psText.c_str();
 		const GLuint v = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(v, 1, &vs, nullptr);
 		const GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
@@ -1825,7 +1858,7 @@ private:
 			gx2::log("CHECK: the TV look's shader did not link\n");
 			return false;
 		}
-		m_crtProgram = program;
+		m_crtProgram[_soft ? 1 : 0] = program;
 		return true;
 	}
 
@@ -2989,8 +3022,8 @@ private:
 	Texture m_crt;
 	GX2DepthBuffer m_crtDepth = {};
 	GX2Sampler m_crtSampler = {};
-	GLuint m_crtProgram = 0;
-	bool m_crtFailed = false;
+	GLuint m_crtProgram[2] = {0, 0}; // CRT, Soft CRT
+	bool m_crtFailed[2] = {false, false};
 	std::unordered_map<u32, Texture> m_textures;
 	std::unordered_map<u32, Framebuffer> m_framebuffers;
 	std::unordered_map<u32, Renderbuffer> m_renderbuffers;
@@ -3158,9 +3191,9 @@ GX2ColorBuffer * presentColorBuffer()
 	return g_context == nullptr ? nullptr : g_context->presentBuffer();
 }
 
-GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height)
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft)
 {
-	return g_context == nullptr ? nullptr : g_context->crtBuffer(_src, _width, _height);
+	return g_context == nullptr ? nullptr : g_context->crtBuffer(_src, _width, _height, _soft);
 }
 
 void endFrame()

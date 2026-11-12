@@ -58,7 +58,7 @@ extern "C" const unsigned char our64_cat2_jpg[], our64_cat2_jpg_end[], our64_pad
 Platform * platform;
 namespace gx2 { // GLideN64's GX2 backend (gx2_ContextImpl.h; u32 is unsigned int there)
 void restoreState();
-GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, unsigned int _width, unsigned int _height);
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, unsigned int _width, unsigned int _height, int _soft);
 }
 
 namespace {
@@ -536,9 +536,9 @@ void ui_gfx_screens_changed() { g_card_copies = 0; }
 // Settings > Picture > TV look (2026-11-12): CRT draws the TV's frame again
 // at the TV's size with scanlines (gx2::crtColorBuffer); the GamePad keeps the
 // clean frame. Game frames only: the menus are not the game's picture.
-static bool g_crt;
+static int g_crt; // 0 clean, 1 CRT, 2 Soft CRT (LOOK_)
 
-void ui_gfx_set_crt(bool on) { g_crt = on; }
+void ui_gfx_set_crt(int look) { g_crt = look; }
 
 static GX2ColorBuffer * tv_frame(GX2ColorBuffer * frame)
 {
@@ -554,7 +554,7 @@ static GX2ColorBuffer * tv_frame(GX2ColorBuffer * frame)
 	default:
 		break;
 	}
-	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, w, h);
+	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, w, h, g_crt == 2);
 	return crt != nullptr ? crt : frame;
 }
 

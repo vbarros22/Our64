@@ -139,6 +139,7 @@ static void picture_applies_what_left_right_picked(void)
 	picture_event(&p, PEV_DOWN, -1);
 	CHECK(p.row == PIC_LOOK); /* the last row */
 	CHECK(!strcmp(picture_row_name(PIC_LOOK), "TV look") && !strcmp(picture_value_name(PIC_LOOK, LOOK_CRT), "CRT"));
+	CHECK(picture_values(PIC_LOOK) == 3 && !strcmp(picture_value_name(PIC_LOOK, LOOK_SOFT), "Soft CRT"));
 	CHECK(!strcmp(picture_row_name(PIC_FILTER), "Texture filter"));
 	CHECK(!strcmp(picture_value_name(PIC_FILTER, FILTER_SMOOTH), "Smooth") && !strcmp(picture_value_name(PIC_FILTER, FILTER_N64), "N64"));
 	CHECK(picture_event(&p, PEV_BACK, -1) == PICT_BACK && picture_event(&p, PEV_HOME, -1) == PICT_HOME);

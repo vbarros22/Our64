@@ -28,7 +28,7 @@ static const char *const g_picture_name[PICTURES] = { "4:3", "16:9 stretched" };
 const char *picture_name(int picture) { return picture >= 0 && picture < PICTURES ? g_picture_name[picture] : "?"; }
 static const char *const g_filter_name[FILTERS] = { "Smooth", "N64" };
 const char *filter_name(int filter) { return filter >= 0 && filter < FILTERS ? g_filter_name[filter] : "?"; }
-static const char *const g_look_name[LOOKS] = { "Clean", "CRT" };
+static const char *const g_look_name[LOOKS] = { "Clean", "CRT", "Soft CRT" };
 const char *look_name(int look) { return look >= 0 && look < LOOKS ? g_look_name[look] : "?"; }
 static const char *const g_theme_name[THEMES] = { "Standard", "Comrade" };
 const char *theme_name(int theme) { return theme >= 0 && theme < THEMES ? g_theme_name[theme] : "?"; }
@@ -189,7 +189,7 @@ int settings_format_all(char *out, unsigned size, const our_settings *s)
 		snprintf(recent + at, sizeof(recent) - at, "%s%s", i ? " | " : "", s->recent[i]);
 	}
 	return snprintf(out, size, "# Our64 settings. Screen mode: TV only, TV + GamePad or GamePad only. "
-	                           "Picture: 4:3 or 16:9 stretched. Texture filter: Smooth or N64. TV look: Clean or CRT. Theme: Standard or Comrade. Our ROMs: Covers or List. "
+	                           "Picture: 4:3 or 16:9 stretched. Texture filter: Smooth or N64. TV look: Clean, CRT or Soft CRT. Theme: Standard or Comrade. Our ROMs: Covers or List. "
 	                           "Auto-resume: on or off. "
 	                           "Start on: all, recent or favorites.\n"
 	                           "Screen mode = %s\nPicture = %s\nTexture filter = %s\nTV look = %s\nTheme = %s\nOur ROMs = %s\nROM folder = %s\nROM drive = %s\nLast game = %s\nRecent games = %s\n"

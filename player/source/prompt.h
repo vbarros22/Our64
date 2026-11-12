@@ -41,9 +41,10 @@ const char *picture_name(int picture); /* "4:3", "16:9 stretched" */
 enum { FILTER_SMOOTH, FILTER_N64, FILTERS };
 const char *filter_name(int filter); /* "Smooth", "N64" */
 /* "TV look = Clean": Settings > Picture. CRT gives the TV scanlines and a
- * light aperture grille; the GamePad stays clean. */
-enum { LOOK_CLEAN, LOOK_CRT, LOOKS };
-const char *look_name(int look); /* "Clean", "CRT" */
+ * light aperture grille; Soft CRT (after the Switch 2's) blurs and fringes
+ * them too, with rounded, darker corners. The GamePad stays clean. */
+enum { LOOK_CLEAN, LOOK_CRT, LOOK_SOFT, LOOKS };
+const char *look_name(int look); /* "Clean", "CRT", "Soft CRT" */
 /* "Theme = Standard", "Our ROMs = Covers": Settings > Theme (theme.h). */
 enum { THEME_STANDARD, THEME_COMRADE, THEMES };
 const char *theme_name(int theme); /* "Standard", "Comrade" */

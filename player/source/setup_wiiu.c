@@ -418,7 +418,7 @@ static int run_picture(void)
 					write_failed();
 				} else {
 					picture_applied(p);
-					video_set_crt(p->look == LOOK_CRT);
+					video_set_crt(p->look);
 					snprintf(g_view.line, sizeof(g_view.line), "TV look: %s%s", look_name(p->look),
 					         g_from_pause ? ", on Resume" : "");
 				}

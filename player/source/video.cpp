@@ -1387,16 +1387,17 @@ void picture_wide_on_graphics_core(void *) { ui_gfx_set_picture_43(false); }
 extern "C" void video_set_filter(int n64) { g_n64_filter = n64; }
 
 namespace {
-void crt_on_on_graphics_core(void *) { ui_gfx_set_crt(true); }
-void crt_off_on_graphics_core(void *) { ui_gfx_set_crt(false); }
+int g_look_asked;
+void crt_on_graphics_core(void *) { ui_gfx_set_crt(g_look_asked); }
 } // namespace
 
-extern "C" void video_set_crt(int on)
+extern "C" void video_set_crt(int look)
 {
+	g_look_asked = look;
 	if (g_gfx_ok)
-		call(on ? crt_on_on_graphics_core : crt_off_on_graphics_core, nullptr);
+		call(crt_on_graphics_core, nullptr);
 	else
-		ui_gfx_set_crt(on != 0);
+		ui_gfx_set_crt(look);
 }
 
 extern "C" void video_set_picture(int wide)

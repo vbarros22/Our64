@@ -144,6 +144,7 @@ static void test_settings_file(void)
 	CHECK(settings_parse("", &s) == SETTINGS_MISSING && s.look == LOOK_CLEAN);
 	CHECK(settings_parse("TV look = CRT\n", &s) == 0 && s.look == LOOK_CRT);
 	CHECK(settings_parse("TV look = sepia\n", &s) == SETTINGS_DAMAGED && s.look == LOOK_CLEAN);
+	CHECK(settings_parse("TV look = Soft CRT\n", &s) == 0 && s.look == LOOK_SOFT && !strcmp(look_name(LOOK_SOFT), "Soft CRT"));
 	w.look = LOOK_CRT;
 	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nTV look = CRT\n"));
 	CHECK(settings_parse(text, &s) == 0 && s.look == LOOK_CRT && s.filter == FILTER_N64);
