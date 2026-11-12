@@ -56,7 +56,10 @@ __asm__(".section .rodata\n.balign 64\n.global our64_cat2_jpg\nour64_cat2_jpg:\n
 extern "C" const unsigned char our64_cat2_jpg[], our64_cat2_jpg_end[], our64_pad_png[], our64_pad_png_end[];
 
 Platform * platform;
-namespace gx2 { void restoreState(); } // GLideN64's GX2 backend
+namespace gx2 { // GLideN64's GX2 backend (gx2_ContextImpl.h; u32 is unsigned int there)
+void restoreState();
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, unsigned int _width, unsigned int _height);
+}
 
 namespace {
 
