@@ -363,7 +363,7 @@ static int run_picture(void)
 	frame_input f;
 	memset(&f, 0, sizeof(f));
 	input_menu_state(&f.m);
-	picture_open(p, ui_mode(), g_settings.picture, f.m.type[0] >= 0);
+	picture_open(p, ui_mode(), g_settings.picture, g_settings.filter, f.m.type[0] >= 0);
 	g_view.screen = SETUP_PICTURE;
 	g_view.line[0] = 0;
 	int touching = 0, target = -1;
@@ -406,6 +406,20 @@ static int run_picture(void)
 					picture_applied(p);
 					snprintf(g_view.line, sizeof(g_view.line), "Shape: %s%s", picture_name(p->shape),
 					         g_from_pause ? ", on Resume" : "");
+				}
+				break;
+			}
+			case PICT_FILTER: { /* GLideN64 builds its shaders with it: from the next game start */
+				int keep = g_settings.filter;
+				g_settings.filter = p->pick[PIC_FILTER];
+				if (setup_save_settings()) {
+					g_settings.filter = keep;
+					p->pick[PIC_FILTER] = p->filter;
+					write_failed();
+				} else {
+					picture_applied(p);
+					snprintf(g_view.line, sizeof(g_view.line), "Texture filter: %s%s", filter_name(p->filter),
+					         g_from_pause ? ", from the next game start" : "");
 				}
 				break;
 			}

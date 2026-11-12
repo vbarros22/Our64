@@ -26,6 +26,8 @@ static char *trim(char *s)
 static const char *const g_picture_name[PICTURES] = { "4:3", "16:9 stretched" };
 
 const char *picture_name(int picture) { return picture >= 0 && picture < PICTURES ? g_picture_name[picture] : "?"; }
+static const char *const g_filter_name[FILTERS] = { "Smooth", "N64" };
+const char *filter_name(int filter) { return filter >= 0 && filter < FILTERS ? g_filter_name[filter] : "?"; }
 static const char *const g_theme_name[THEMES] = { "Standard", "Comrade" };
 const char *theme_name(int theme) { return theme >= 0 && theme < THEMES ? g_theme_name[theme] : "?"; }
 static const char *const g_layout_name[LAYOUTS] = { "Covers", "List" };
@@ -38,6 +40,7 @@ int settings_parse(const char *text, our_settings *s)
 {
 	s->mode = -1;
 	s->picture = PICTURE_43;
+	s->filter = FILTER_SMOOTH;
 	s->theme = THEME_STANDARD;
 	s->layout = LAYOUT_COVERS;
 	s->last_game[0] = 0;
@@ -75,6 +78,10 @@ int settings_parse(const char *text, our_settings *s)
 			for (int p = 0; p < PICTURES; p++)
 				if (!strcasecmp(v, g_picture_name[p]))
 					found = s->picture = p;
+		} else if (!strcasecmp(k, "Texture filter")) {
+			for (int f = 0; f < FILTERS; f++)
+				if (!strcasecmp(v, g_filter_name[f]))
+					found = s->filter = f;
 		} else if (!strcasecmp(k, "Theme")) {
 			for (int t = 0; t < THEMES; t++)
 				if (!strcasecmp(v, g_theme_name[t]))
@@ -175,12 +182,12 @@ int settings_format_all(char *out, unsigned size, const our_settings *s)
 		snprintf(recent + at, sizeof(recent) - at, "%s%s", i ? " | " : "", s->recent[i]);
 	}
 	return snprintf(out, size, "# Our64 settings. Screen mode: TV only, TV + GamePad or GamePad only. "
-	                           "Picture: 4:3 or 16:9 stretched. Theme: Standard or Comrade. Our ROMs: Covers or List. "
+	                           "Picture: 4:3 or 16:9 stretched. Texture filter: Smooth or N64. Theme: Standard or Comrade. Our ROMs: Covers or List. "
 	                           "Auto-resume: on or off. "
 	                           "Start on: all, recent or favorites.\n"
-	                           "Screen mode = %s\nPicture = %s\nTheme = %s\nOur ROMs = %s\nROM folder = %s\nROM drive = %s\nLast game = %s\nRecent games = %s\n"
+	                           "Screen mode = %s\nPicture = %s\nTexture filter = %s\nTheme = %s\nOur ROMs = %s\nROM folder = %s\nROM drive = %s\nLast game = %s\nRecent games = %s\n"
 	                           "Rumble = %s, %s, %s, %s\nAuto-resume = %s\nStart on = %s\n",
-	                s->mode >= 0 ? mode_name(s->mode) : mode_name(MODE_BOTH), picture_name(s->picture), theme_name(s->theme), layout_name(s->layout), s->rom_folder, s->rom_drive, s->last_game,
+	                s->mode >= 0 ? mode_name(s->mode) : mode_name(MODE_BOTH), picture_name(s->picture), filter_name(s->filter), theme_name(s->theme), layout_name(s->layout), s->rom_folder, s->rom_drive, s->last_game,
 	                recent, s->rumble[0] ? "on" : "off", s->rumble[1] ? "on" : "off", s->rumble[2] ? "on" : "off",
 	                s->rumble[3] ? "on" : "off", s->auto_resume ? "on" : "off",
 	                g_start_key[s->start_on >= 0 && s->start_on < STARTS ? s->start_on : START_RECENT]);

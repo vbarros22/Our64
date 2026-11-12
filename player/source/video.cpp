@@ -119,6 +119,7 @@ volatile uint32_t g_busy_cmd;
 unsigned g_rdram_size = 0x800000;
 bool g_started = false;
 bool g_plugin_up = false; // PluginStartup ran: once a session; each game opens and closes its ROM
+int g_n64_filter; // GLideN64's bilinearMode 0 (3-point) when set (Settings > Picture > Texture filter)
 const int g_aspect = 1;   // GLideN64's AspectRatio, force 4:3: its 640x480 window either way (Picture: ui_gfx_scan)
 
 double now_us() { return double(OSTicksToMicroseconds(OSGetSystemTime())); }
@@ -1195,13 +1196,14 @@ void start_on_graphics_core(void * result)
 			            g_pace_log ? "" : ": no memory for the record");
 		}
 	}
-	static char settings[160];
+	static char settings[192];
 	snprintf(settings, sizeof(settings),
-	         "EnableCopyColorToRDRAM=%d,AsyncShaderCompilation=%d,EnableInaccurateTextureCoordinates=%d,AspectRatio=%d",
-	         copy, async, inexact, g_aspect);
+	         "EnableCopyColorToRDRAM=%d,AsyncShaderCompilation=%d,EnableInaccurateTextureCoordinates=%d,AspectRatio=%d,"
+	         "bilinearMode=%d",
+	         copy, async, inexact, g_aspect, g_n64_filter ? 0 : 1);
 	our64_config_override(settings);
-	report_line("Color copy to RDRAM: %d (per-game ini entries win). Shaders compile %s.", copy,
-	            async ? "in the background" : "before drawing");
+	report_line("Color copy to RDRAM: %d (per-game ini entries win). Shaders compile %s. Texture filter: %s.", copy,
+	            async ? "in the background" : "before drawing", g_n64_filter ? "N64 3-point" : "smooth");
 
 	GFX_INFO gi = {};
 	gi.HEADER = g_mem.header;
@@ -1382,6 +1384,8 @@ void picture_wide_on_graphics_core(void *) { ui_gfx_set_picture_43(false); }
 // The shape is set where frames go to the screens (ui_gfx_scan): GLideN64's
 // own aspect setting only resized its 4:3 window to the same 640x480, after
 // rebuilding its frame buffers (0.8 s).
+extern "C" void video_set_filter(int n64) { g_n64_filter = n64; }
+
 extern "C" void video_set_picture(int wide)
 {
 	if (g_gfx_ok)

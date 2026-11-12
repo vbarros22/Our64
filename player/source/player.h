@@ -27,6 +27,7 @@ void video_idle_frame(void);      /* one dark red frame, after the game stopped 
 int  video_start(void);           /* after the ROM is loaded; 0 on success */
 void video_stop(void);
 void video_set_picture(int wide); /* 4:3 or stretched to 16:9; a running game changes at its next frame */
+void video_set_filter(int n64);   /* textures: standard bilinear or the N64's 3-point; read at video_start */
 unsigned video_submit_task(void); /* posts the graphics task in DMEM; returns its number */
 void video_submit_rdp_list(void); /* posts the RDP commands from DPC_CURRENT to DPC_END */
 unsigned video_tasks_done(void);  /* graphics tasks decoded so far */

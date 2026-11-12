@@ -36,6 +36,10 @@ enum { PICTURE_43, PICTURE_WIDE, PICTURES };
  * fit the drawer without scrolling. '|' cannot be in a FAT file name. */
 #define RECENT_GAMES 5
 const char *picture_name(int picture); /* "4:3", "16:9 stretched" */
+/* "Texture filter = Smooth": Settings > Picture. Smooth is GLideN64's standard
+ * 4-point bilinear; N64 is the console's own 3-point filter. */
+enum { FILTER_SMOOTH, FILTER_N64, FILTERS };
+const char *filter_name(int filter); /* "Smooth", "N64" */
 /* "Theme = Standard", "Our ROMs = Covers": Settings > Theme (theme.h). */
 enum { THEME_STANDARD, THEME_COMRADE, THEMES };
 const char *theme_name(int theme); /* "Standard", "Comrade" */
@@ -57,6 +61,7 @@ typedef struct {
 	                       * it is unplugged; "" none (an SD folder, no label, or a settings.cfg from before) */
 	int auto_resume;      /* "Auto-resume = on|off": resume points written and loaded (the default), or neither */
 	int start_on;         /* START_ */
+	int filter;           /* FILTER_: "Texture filter", last so the positional initializers keep their order */
 } our_settings;
 int settings_parse(const char *text, our_settings *s);
 /* A game started: it becomes the last game and the newest recent one. */

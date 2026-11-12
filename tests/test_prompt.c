@@ -132,6 +132,14 @@ static void test_settings_file(void)
 	CHECK(settings_parse(text, &s) == 0 && s.mode == MODE_TV && s.picture == PICTURE_WIDE && s.theme == THEME_COMRADE && s.layout == LAYOUT_LIST);
 	CHECK(!strcmp(s.last_game, "Dr. Mario 64 (USA).z64") && !s.rumble[1] && s.rumble[2]);
 	CHECK(!strcmp(picture_name(PICTURE_43), "4:3") && !strcmp(picture_name(PICTURE_WIDE), "16:9 stretched"));
+	/* Texture filter: Smooth by default, written and read back */
+	CHECK(settings_parse("", &s) == SETTINGS_MISSING && s.filter == FILTER_SMOOTH);
+	CHECK(settings_parse("Texture filter = N64\n", &s) == 0 && s.filter == FILTER_N64);
+	CHECK(settings_parse("texture filter = smooth\n", &s) == 0 && s.filter == FILTER_SMOOTH);
+	CHECK(settings_parse("Texture filter = blurry\n", &s) == SETTINGS_DAMAGED && s.filter == FILTER_SMOOTH);
+	w.filter = FILTER_N64;
+	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nTexture filter = N64\n"));
+	CHECK(settings_parse(text, &s) == 0 && s.filter == FILTER_N64 && s.picture == PICTURE_WIDE && s.theme == THEME_COMRADE);
 }
 
 static void recent_games_keep_the_last_five_played_newest_first(void)
