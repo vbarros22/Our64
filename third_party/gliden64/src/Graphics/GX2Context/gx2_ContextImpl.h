@@ -14,10 +14,11 @@ GX2ColorBuffer * screenColorBuffer();
 // The screen turned the right way up for the TV (rows top first).
 GX2ColorBuffer * presentColorBuffer();
 
-// Settings > Picture > TV look = CRT (or Soft CRT, _soft): _src (a finished frame, rows top first)
+// Settings > Picture > TV look / GamePad look = CRT (or Soft CRT, _soft), for
+// the TV (_slot 0) or the GamePad (_slot 1), each with its own frame: _src (a finished frame, rows top first)
 // drawn at _width x _height with scanlines and a light aperture grille. Null
 // without a context or memory; GLideN64's state is marked to be set again.
-GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft);
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft, int _slot);
 
 // Ends a frame: waits for the GPU and recycles per-frame memory.
 void endFrame();

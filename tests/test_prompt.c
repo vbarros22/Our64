@@ -148,6 +148,12 @@ static void test_settings_file(void)
 	w.look = LOOK_CRT;
 	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nTV look = CRT\n"));
 	CHECK(settings_parse(text, &s) == 0 && s.look == LOOK_CRT && s.filter == FILTER_N64);
+	/* GamePad look: its own, Clean by default */
+	CHECK(settings_parse("", &s) == SETTINGS_MISSING && s.pad_look == LOOK_CLEAN);
+	CHECK(settings_parse("GamePad look = Soft CRT\n", &s) == 0 && s.pad_look == LOOK_SOFT && s.look == LOOK_CLEAN);
+	w.pad_look = LOOK_SOFT;
+	CHECK(settings_format_all(text, sizeof(text), &w) > 0 && strstr(text, "\nGamePad look = Soft CRT\n"));
+	CHECK(settings_parse(text, &s) == 0 && s.pad_look == LOOK_SOFT && s.look == LOOK_CRT);
 }
 
 static void recent_games_keep_the_last_five_played_newest_first(void)

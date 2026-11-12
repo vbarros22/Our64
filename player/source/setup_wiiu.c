@@ -363,7 +363,7 @@ static int run_picture(void)
 	frame_input f;
 	memset(&f, 0, sizeof(f));
 	input_menu_state(&f.m);
-	picture_open(p, ui_mode(), g_settings.picture, g_settings.filter, g_settings.look, f.m.type[0] >= 0);
+	picture_open(p, ui_mode(), g_settings.picture, g_settings.filter, g_settings.look, g_settings.pad_look, f.m.type[0] >= 0);
 	g_view.screen = SETUP_PICTURE;
 	g_view.line[0] = 0;
 	int touching = 0, target = -1;
@@ -418,8 +418,23 @@ static int run_picture(void)
 					write_failed();
 				} else {
 					picture_applied(p);
-					video_set_crt(p->look);
+					video_set_crt(p->look, p->pad_look);
 					snprintf(g_view.line, sizeof(g_view.line), "TV look: %s%s", look_name(p->look),
+					         g_from_pause ? ", on Resume" : "");
+				}
+				break;
+			}
+			case PICT_PADLOOK: { /* on the GamePad's next frame */
+				int keep = g_settings.pad_look;
+				g_settings.pad_look = p->pick[PIC_PADLOOK];
+				if (setup_save_settings()) {
+					g_settings.pad_look = keep;
+					p->pick[PIC_PADLOOK] = p->pad_look;
+					write_failed();
+				} else {
+					picture_applied(p);
+					video_set_crt(p->look, p->pad_look);
+					snprintf(g_view.line, sizeof(g_view.line), "GamePad look: %s%s", look_name(p->pad_look),
 					         g_from_pause ? ", on Resume" : "");
 				}
 				break;

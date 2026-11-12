@@ -140,31 +140,32 @@ int settings_legend(const settings_ui *s, int type, pause_key *keys, int max)
 
 /* ---- Settings > Picture ---- */
 
-static const char *const g_pic_row[PIC_ROWS] = { "Screen mode", "Shape", "Texture filter", "TV look" };
+static const char *const g_pic_row[PIC_ROWS] = { "Screen mode", "Shape", "Texture filter", "TV look", "GamePad look" };
 
-int picture_values(int row) { return row == PIC_SCREEN ? MODES : row == PIC_SHAPE ? PICTURES : row == PIC_FILTER ? FILTERS : row == PIC_LOOK ? LOOKS : 0; }
+int picture_values(int row) { return row == PIC_SCREEN ? MODES : row == PIC_SHAPE ? PICTURES : row == PIC_FILTER ? FILTERS : row == PIC_LOOK || row == PIC_PADLOOK ? LOOKS : 0; }
 
 int picture_in_use(const picture_ui *p, int row)
 {
-	return row == PIC_SCREEN ? p->mode : row == PIC_SHAPE ? p->shape : row == PIC_FILTER ? p->filter : row == PIC_LOOK ? p->look : -1;
+	return row == PIC_SCREEN ? p->mode : row == PIC_SHAPE ? p->shape : row == PIC_FILTER ? p->filter : row == PIC_LOOK ? p->look : row == PIC_PADLOOK ? p->pad_look : -1;
 }
 
 int picture_off(const picture_ui *p, int row, int i) { return row == PIC_SCREEN && !p->gamepad && mode_uses_gamepad(i); }
 
 const char *picture_value_name(int row, int i)
 {
-	return row == PIC_SCREEN ? mode_name(i) : row == PIC_SHAPE ? picture_name(i) : row == PIC_FILTER ? filter_name(i) : row == PIC_LOOK ? look_name(i) : "";
+	return row == PIC_SCREEN ? mode_name(i) : row == PIC_SHAPE ? picture_name(i) : row == PIC_FILTER ? filter_name(i) : row == PIC_LOOK || row == PIC_PADLOOK ? look_name(i) : "";
 }
 
 const char *picture_row_name(int row) { return row >= 0 && row < PIC_ROWS ? g_pic_row[row] : ""; }
 
-void picture_open(picture_ui *p, int mode, int shape, int filter, int look, int gamepad)
+void picture_open(picture_ui *p, int mode, int shape, int filter, int look, int pad_look, int gamepad)
 {
 	memset(p, 0, sizeof(*p));
 	p->mode = p->pick[PIC_SCREEN] = mode;
 	p->shape = p->pick[PIC_SHAPE] = shape;
 	p->filter = p->pick[PIC_FILTER] = filter;
 	p->look = p->pick[PIC_LOOK] = look;
+	p->pad_look = p->pick[PIC_PADLOOK] = pad_look;
 	p->gamepad = gamepad;
 	p->touched = -1;
 }
@@ -175,6 +176,7 @@ void picture_applied(picture_ui *p)
 	p->shape = p->pick[PIC_SHAPE];
 	p->filter = p->pick[PIC_FILTER];
 	p->look = p->pick[PIC_LOOK];
+	p->pad_look = p->pick[PIC_PADLOOK];
 }
 
 static void picture_drop_picks(picture_ui *p)
@@ -183,6 +185,7 @@ static void picture_drop_picks(picture_ui *p)
 	p->pick[PIC_SHAPE] = p->shape;
 	p->pick[PIC_FILTER] = p->filter;
 	p->pick[PIC_LOOK] = p->look;
+	p->pick[PIC_PADLOOK] = p->pad_look;
 }
 
 static int picture_apply(const picture_ui *p)
@@ -190,7 +193,7 @@ static int picture_apply(const picture_ui *p)
 	const int i = p->pick[p->row];
 	if (i == picture_in_use(p, p->row) || picture_off(p, p->row, i))
 		return PICT_NONE;
-	return p->row == PIC_SCREEN ? PICT_MODE : p->row == PIC_SHAPE ? PICT_SHAPE : p->row == PIC_FILTER ? PICT_FILTER : PICT_LOOK;
+	return p->row == PIC_SCREEN ? PICT_MODE : p->row == PIC_SHAPE ? PICT_SHAPE : p->row == PIC_FILTER ? PICT_FILTER : p->row == PIC_LOOK ? PICT_LOOK : PICT_PADLOOK;
 }
 
 static void picture_select(picture_ui *p, int row)
@@ -252,8 +255,10 @@ const char *picture_row_about(const picture_ui *p)
 		return "4:3 is the games' own shape; 16:9 stretches it to fill a wide TV.";
 	case PIC_FILTER:
 		return "Smooth: 4-point bilinear. N64: the console's own 3-point filter.";
+	case PIC_LOOK:
+		return "CRT: scanlines and a phosphor grille; Soft CRT also blurs. On the TV.";
 	default:
-		return "CRT: scanlines and a phosphor grille; Soft CRT also blurs. TV only.";
+		return "CRT: scanlines and a phosphor grille; Soft CRT also blurs. On the GamePad.";
 	}
 }
 

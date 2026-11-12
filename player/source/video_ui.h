@@ -16,6 +16,6 @@ GX2ColorBuffer * ui_gfx_overlay(GX2ColorBuffer * frame); // the frame with the n
 void ui_gfx_loading_progress(unsigned done, unsigned total); // GLideN64 builds saved shaders: the loading screen moves
 void ui_gfx_scan(GX2ColorBuffer * frame);                // copies a game frame to the screens the mode uses
 void ui_gfx_screens_changed();                           // new scan buffers: the GamePad-only card is copied again
-void ui_gfx_set_crt(int look);                           // TV look (0 clean, 1 CRT, 2 Soft CRT) on the TV's frame
+void ui_gfx_set_crt(int tv, int pad);                    // TV look, GamePad look (0 clean, 1 CRT, 2 Soft CRT)
 void ui_gfx_set_picture_43(bool on);                     // Picture: 4:3 (black at the sides) or stretched
 bool ui_gfx_copy_frame(GX2ColorBuffer * frame, GX2ColorBuffer * to); // a GPU copy into to, (re)allocated to frame's size

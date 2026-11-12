@@ -58,7 +58,7 @@ extern "C" const unsigned char our64_cat2_jpg[], our64_cat2_jpg_end[], our64_pad
 Platform * platform;
 namespace gx2 { // GLideN64's GX2 backend (gx2_ContextImpl.h; u32 is unsigned int there)
 void restoreState();
-GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, unsigned int _width, unsigned int _height, int _soft);
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, unsigned int _width, unsigned int _height, int _soft, int _slot);
 }
 
 namespace {
@@ -536,9 +536,22 @@ void ui_gfx_screens_changed() { g_card_copies = 0; }
 // Settings > Picture > TV look (2026-11-12): CRT draws the TV's frame again
 // at the TV's size with scanlines (gx2::crtColorBuffer); the GamePad keeps the
 // clean frame. Game frames only: the menus are not the game's picture.
-static int g_crt; // 0 clean, 1 CRT, 2 Soft CRT (LOOK_)
+static int g_crt, g_pad_crt; // the TV's, the GamePad's: 0 clean, 1 CRT, 2 Soft CRT (LOOK_)
 
-void ui_gfx_set_crt(int look) { g_crt = look; }
+void ui_gfx_set_crt(int tv, int pad)
+{
+	g_crt = tv;
+	g_pad_crt = pad;
+}
+
+// GamePad look (2026-11-12): the same at the GamePad's 854x480, in its own frame.
+static GX2ColorBuffer * pad_frame(GX2ColorBuffer * frame)
+{
+	if (!g_pad_crt || !video_game_started())
+		return frame;
+	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, 854, 480, g_pad_crt == 2, 1);
+	return crt != nullptr ? crt : frame;
+}
 
 static GX2ColorBuffer * tv_frame(GX2ColorBuffer * frame)
 {
@@ -554,7 +567,7 @@ static GX2ColorBuffer * tv_frame(GX2ColorBuffer * frame)
 	default:
 		break;
 	}
-	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, w, h, g_crt == 2);
+	GX2ColorBuffer * crt = gx2::crtColorBuffer(frame, w, h, g_crt == 2, 0);
 	return crt != nullptr ? crt : frame;
 }
 
@@ -591,7 +604,7 @@ void ui_gfx_scan(GX2ColorBuffer * frame)
 		our64_gx2_prof_mark("TV copy");
 	}
 	if (g_mode != MODE_TV) {
-		GX2CopyColorBufferToScanBuffer(frame, GX2_SCAN_TARGET_DRC);
+		GX2CopyColorBufferToScanBuffer(pad_frame(frame), GX2_SCAN_TARGET_DRC);
 		our64_gx2_prof_mark("GamePad copy");
 	}
 	GX2SwapScanBuffers();

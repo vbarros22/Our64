@@ -471,8 +471,8 @@ struct KeptState {
 	GX2DepthBuffer screenDepth = {};
 	Texture dummy;
 	Texture present;
-	Texture crt;                 // the TV look's frame (crtBuffer), at the TV's size
-	GX2DepthBuffer crtDepth = {};
+	Texture crt[2];              // the looks' frames (crtBuffer): the TV's, the GamePad's
+	GX2DepthBuffer crtDepth[2] = {};
 	GX2Sampler crtSampler = {};
 };
 KeptState g_kept;
@@ -567,8 +567,10 @@ public:
 			m_screenDepth = g_kept.screenDepth;
 			m_dummy = g_kept.dummy;
 			m_present = g_kept.present;
-			m_crt = g_kept.crt;
-			m_crtDepth = g_kept.crtDepth;
+			for (int i = 0; i < 2; ++i) {
+				m_crt[i] = g_kept.crt[i];
+				m_crtDepth[i] = g_kept.crtDepth[i];
+			}
 			m_crtSampler = g_kept.crtSampler;
 		}
 		if (m_ctx == nullptr) {
@@ -1294,41 +1296,45 @@ public:
 	// Settings > Picture > TV look = CRT (2026-11-12): the frame the TV gets,
 	// drawn again at the TV's own size with scanlines and a light aperture
 	// grille. _src is a finished frame, rows top first (a picture copy, after
-	// the 4:3 shaping and the notices). The GamePad keeps the clean frame.
-	GX2ColorBuffer * crtBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft) {
-		const int k = _soft ? 1 : 0;
+	// the 4:3 shaping and the notices). The GamePad has its own (_slot 1).
+	GX2ColorBuffer * crtBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft, int _slot) {
+		// A screen of 480 rows has 2 rows for each of the N64's lines (720: 3).
+		const int k = (_soft ? 1 : 0) + (_height <= 540 ? 2 : 0);
+		const int n = _slot ? 1 : 0;
+		Texture & crt = m_crt[n];
+		GX2DepthBuffer & depth = m_crtDepth[n];
 		if (_src == nullptr || _src->surface.image == nullptr)
 			return nullptr;
 		if (m_crtFailed[k] || (m_crtProgram[k] == 0 && !createCrtProgram(k))) {
 			m_crtFailed[k] = true; // once: not a compile every frame
 			return nullptr;
 		}
-		if (m_crt.allocated && (m_crt.tex.surface.width != _width || m_crt.tex.surface.height != _height)) {
-			// The TV's mode changed: the old pair goes when the GPU is done with it.
-			freeLater(m_crt.tex.surface.image);
-			if (m_crtDepth.surface.image != nullptr)
-				freeLater(m_crtDepth.surface.image);
-			m_crt = Texture();
-			m_crtDepth = GX2DepthBuffer();
+		if (crt.allocated && (crt.tex.surface.width != _width || crt.tex.surface.height != _height)) {
+			// The screen's mode changed: the old pair goes when the GPU is done with it.
+			freeLater(crt.tex.surface.image);
+			if (depth.surface.image != nullptr)
+				freeLater(depth.surface.image);
+			crt = Texture();
+			depth = GX2DepthBuffer();
 		}
-		if (!m_crt.allocated) {
-			allocateTexture(m_crt, _width, _height, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8);
-			// 16 bits: never tested or written, only the TV's size matters (1.8 MB at 720p, not 3.7).
-			allocateDepth(m_crtDepth, _width, _height, GX2_SURFACE_FORMAT_UNORM_R16);
-			if (!m_crt.allocated || m_crtDepth.surface.image == nullptr) {
-				if (m_crt.allocated)
-					MEMFreeToDefaultHeap(m_crt.tex.surface.image);
-				if (m_crtDepth.surface.image != nullptr)
-					MEMFreeToDefaultHeap(m_crtDepth.surface.image);
-				m_crt = Texture();
-				m_crtDepth = GX2DepthBuffer();
-				g_kept.crt = m_crt;
-				g_kept.crtDepth = m_crtDepth;
+		if (!crt.allocated) {
+			allocateTexture(crt, _width, _height, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8);
+			// 16 bits: never tested or written, only the screen's size matters (1.8 MB at 720p, not 3.7).
+			allocateDepth(depth, _width, _height, GX2_SURFACE_FORMAT_UNORM_R16);
+			if (!crt.allocated || depth.surface.image == nullptr) {
+				if (crt.allocated)
+					MEMFreeToDefaultHeap(crt.tex.surface.image);
+				if (depth.surface.image != nullptr)
+					MEMFreeToDefaultHeap(depth.surface.image);
+				crt = Texture();
+				depth = GX2DepthBuffer();
+				g_kept.crt[n] = crt;
+				g_kept.crtDepth[n] = depth;
 				return nullptr;
 			}
 			GX2InitSampler(&m_crtSampler, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
-			g_kept.crt = m_crt; // kept with the rest (init)
-			g_kept.crtDepth = m_crtDepth;
+			g_kept.crt[n] = crt; // kept with the rest (init)
+			g_kept.crtDepth[n] = depth;
 			g_kept.crtSampler = m_crtSampler;
 		}
 		GX2SetContextState(m_ctx);
@@ -1344,21 +1350,21 @@ public:
 			src.surface.image, src.surface.imageSize);
 		Program * p = currentProgram();
 		glUseProgram(m_crtProgram[k]);
-		Program * crt = currentProgram();
-		GX2ColorBuffer * cb = colorBufferOf(m_crt);
+		Program * prog = currentProgram();
+		GX2ColorBuffer * cb = colorBufferOf(crt);
 		GX2SetColorBuffer(cb, GX2_RENDER_TARGET_0);
-		GX2SetDepthBuffer(&m_crtDepth); // unused (no depth test), but the TV's size
+		GX2SetDepthBuffer(&depth); // unused (no depth test), but the screen's size
 		GX2SetViewport(0.0f, 0.0f, f32(_width), f32(_height), 0.0f, 1.0f);
 		GX2SetScissor(0, 0, _width, _height);
 		GX2SetDepthOnlyControl(FALSE, FALSE, GX2_COMPARE_FUNC_ALWAYS);
 		GX2SetPolygonControl(GX2_FRONT_FACE_CW, FALSE, FALSE, FALSE, GX2_POLYGON_MODE_TRIANGLE,
 			GX2_POLYGON_MODE_TRIANGLE, FALSE, FALSE, FALSE);
 		GX2SetColorControl(GX2_LOGIC_OP_COPY, 0, FALSE, TRUE);
-		GX2SetShaderMode(crt->mode);
-		GX2SetFetchShader(&crt->fetch);
-		GX2SetVertexShader(crt->vs);
-		GX2SetPixelShader(crt->ps);
-		for (const SamplerBinding & s : crt->samplers) {
+		GX2SetShaderMode(prog->mode);
+		GX2SetFetchShader(&prog->fetch);
+		GX2SetVertexShader(prog->vs);
+		GX2SetPixelShader(prog->ps);
+		for (const SamplerBinding & s : prog->samplers) {
 			GX2SetPixelTexture(&src, s.location);
 			GX2SetPixelSampler(&m_crtSampler, s.location);
 		}
@@ -1375,7 +1381,7 @@ public:
 		GX2SetAttribBuffer(0, sizeof(quad), sizeof(RectVertex), v);
 		GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, 0, 1);
 		GX2Invalidate(GX2_INVALIDATE_MODE_COLOR_BUFFER, cb->surface.image, cb->surface.imageSize);
-		profMark("TV look: CRT");
+		profMark(_slot ? "GamePad look: CRT" : "TV look: CRT");
 		glUseProgram(p != nullptr ? p->name : 0);
 		m_dirty = m_targetDirty = true;
 		m_lastProgram = nullptr;
@@ -1792,10 +1798,15 @@ private:
 	// first, three pixels wide, made the dialogue hard to read on a TV), red and blue a little apart (composite-like
 	// fringes), a little of the next line toward the line's borders, softer
 	// scanlines, and the 4:3 picture's corners rounded and darkened.
-	bool createCrtProgram(int _soft) {
+	// TWO (a screen of 480 rows: the GamePad, a 480p TV, 2026-11-12): 2 rows a
+	// line, and a beam sampled at both rows' centers would light them the same,
+	// so one row is the line's middle and the other its border, with the gain
+	// for two rows, brighter borders and a lighter grille for the smaller screen.
+	bool createCrtProgram(int _k) {
+		const int soft = _k & 1, two = (_k & 2) ? 1 : 0;
 		const char * vs = "#version 330\nin vec4 aRectPosition;\nin vec2 aTexCoord0;\nout vec2 vUV;\n"
 			"void main() { gl_Position = vec4(aRectPosition.x, -aRectPosition.y, 0.0, 1.0); vUV = aTexCoord0; }\n";
-		std::string psText = std::string("#version 330\n#define SOFT ") + (_soft ? "1" : "0") + "\n" +
+		std::string psText = std::string("#version 330\n#define SOFT ") + (soft ? "1" : "0") + "\n#define TWO " + (two ? "1" : "0") + "\n" +
 			"uniform sampler2D uTex0;\n"
 			"in vec2 vUV;\n"
 			"out vec4 fragColor;\n"
@@ -1806,7 +1817,11 @@ private:
 			"  highp float line = floor(y);\n"
 			"  highp float d = y - line - 0.5;\n"
 			"  highp float vy = (line + 0.5) / lines;\n"
+			"#if TWO\n"
+			"  float t = mod(floor(gl_FragCoord.y), 2.0);\n"
+			"#else\n"
 			"  float t = 2.0 * d;\n"
+			"#endif\n"
 			"#if SOFT\n"
 			"  highp float px = 1.0 / size.x;\n"
 			"  vec3 c = texture(uTex0, vec2(vUV.x - 2.0 * px, vy)).rgb * 0.06\n"
@@ -1825,12 +1840,22 @@ private:
 			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
 			"  float edge = mix(0.45, 0.75, lum);\n"
 			"#endif\n"
-			"  float beam = 1.0 - (1.0 - edge) * t * t;\n"
+			"#if TWO\n"
+			"  edge = min(edge + 0.1, 0.9);\n"
+			"  float gain = 2.0 / (1.0 + edge);\n"
+			"#else\n"
 			"  float gain = 1.0 / (1.0 - (1.0 - edge) / 3.0);\n"
+			"#endif\n"
+			"  float beam = 1.0 - (1.0 - edge) * t * t;\n"
 			"  vec3 o = c * beam * gain;\n"
 			"  float m = mod(floor(gl_FragCoord.x), 3.0);\n"
+			"#if TWO\n"
+			"  vec3 mask = vec3(0.95) + 0.05 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
+			"  o *= mask * (1.0 / 0.9667);\n"
+			"#else\n"
 			"  vec3 mask = vec3(0.9) + 0.1 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
 			"  o *= mask * (1.0 / 0.9333);\n"
+			"#endif\n"
 			"#if SOFT\n"
 			"  highp float gw = min(size.x, size.y * 4.0 / 3.0);\n"
 			"  highp float gx = (vUV.x * size.x - (size.x - gw) * 0.5) / gw;\n"
@@ -1861,7 +1886,7 @@ private:
 			gx2::log("CHECK: the TV look's shader did not link\n");
 			return false;
 		}
-		m_crtProgram[_soft ? 1 : 0] = program;
+		m_crtProgram[_k] = program;
 		return true;
 	}
 
@@ -3022,11 +3047,11 @@ private:
 	Texture m_dummy;
 	Texture m_present;
 	GLuint m_presentProgram = 0;
-	Texture m_crt;
-	GX2DepthBuffer m_crtDepth = {};
+	Texture m_crt[2];                // the TV's, the GamePad's
+	GX2DepthBuffer m_crtDepth[2] = {};
 	GX2Sampler m_crtSampler = {};
-	GLuint m_crtProgram[2] = {0, 0}; // CRT, Soft CRT
-	bool m_crtFailed[2] = {false, false};
+	GLuint m_crtProgram[4] = {0, 0, 0, 0}; // CRT, Soft CRT; each with 3 or 2 rows a line
+	bool m_crtFailed[4] = {false, false, false, false};
 	std::unordered_map<u32, Texture> m_textures;
 	std::unordered_map<u32, Framebuffer> m_framebuffers;
 	std::unordered_map<u32, Renderbuffer> m_renderbuffers;
@@ -3194,9 +3219,9 @@ GX2ColorBuffer * presentColorBuffer()
 	return g_context == nullptr ? nullptr : g_context->presentBuffer();
 }
 
-GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft)
+GX2ColorBuffer * crtColorBuffer(GX2ColorBuffer * _src, u32 _width, u32 _height, int _soft, int _slot)
 {
-	return g_context == nullptr ? nullptr : g_context->crtBuffer(_src, _width, _height, _soft);
+	return g_context == nullptr ? nullptr : g_context->crtBuffer(_src, _width, _height, _soft, _slot);
 }
 
 void endFrame()

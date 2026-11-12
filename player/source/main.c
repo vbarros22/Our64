@@ -1609,7 +1609,7 @@ static int play_game(int index)
 	loading("Preparing graphics", 0.7f);
 	video_set_picture(s.picture == PICTURE_WIDE);
 	video_set_filter(s.filter == FILTER_N64);
-	video_set_crt(s.look);
+	video_set_crt(s.look, s.pad_look);
 	if (video_start()) {
 		report_line("Graphics did not start.");
 		goto teardown;

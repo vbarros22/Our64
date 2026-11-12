@@ -44,6 +44,7 @@ int settings_parse(const char *text, our_settings *s)
 	s->picture = PICTURE_43;
 	s->filter = FILTER_SMOOTH;
 	s->look = LOOK_CLEAN;
+	s->pad_look = LOOK_CLEAN;
 	s->theme = THEME_STANDARD;
 	s->layout = LAYOUT_COVERS;
 	s->last_game[0] = 0;
@@ -85,6 +86,10 @@ int settings_parse(const char *text, our_settings *s)
 			for (int f = 0; f < FILTERS; f++)
 				if (!strcasecmp(v, g_filter_name[f]))
 					found = s->filter = f;
+		} else if (!strcasecmp(k, "GamePad look")) {
+			for (int l = 0; l < LOOKS; l++)
+				if (!strcasecmp(v, g_look_name[l]))
+					found = s->pad_look = l;
 		} else if (!strcasecmp(k, "TV look")) {
 			for (int l = 0; l < LOOKS; l++)
 				if (!strcasecmp(v, g_look_name[l]))
@@ -189,12 +194,12 @@ int settings_format_all(char *out, unsigned size, const our_settings *s)
 		snprintf(recent + at, sizeof(recent) - at, "%s%s", i ? " | " : "", s->recent[i]);
 	}
 	return snprintf(out, size, "# Our64 settings. Screen mode: TV only, TV + GamePad or GamePad only. "
-	                           "Picture: 4:3 or 16:9 stretched. Texture filter: Smooth or N64. TV look: Clean, CRT or Soft CRT. Theme: Standard or Comrade. Our ROMs: Covers or List. "
+	                           "Picture: 4:3 or 16:9 stretched. Texture filter: Smooth or N64. TV look and GamePad look: Clean, CRT or Soft CRT. Theme: Standard or Comrade. Our ROMs: Covers or List. "
 	                           "Auto-resume: on or off. "
 	                           "Start on: all, recent or favorites.\n"
-	                           "Screen mode = %s\nPicture = %s\nTexture filter = %s\nTV look = %s\nTheme = %s\nOur ROMs = %s\nROM folder = %s\nROM drive = %s\nLast game = %s\nRecent games = %s\n"
+	                           "Screen mode = %s\nPicture = %s\nTexture filter = %s\nTV look = %s\nGamePad look = %s\nTheme = %s\nOur ROMs = %s\nROM folder = %s\nROM drive = %s\nLast game = %s\nRecent games = %s\n"
 	                           "Rumble = %s, %s, %s, %s\nAuto-resume = %s\nStart on = %s\n",
-	                s->mode >= 0 ? mode_name(s->mode) : mode_name(MODE_BOTH), picture_name(s->picture), filter_name(s->filter), look_name(s->look), theme_name(s->theme), layout_name(s->layout), s->rom_folder, s->rom_drive, s->last_game,
+	                s->mode >= 0 ? mode_name(s->mode) : mode_name(MODE_BOTH), picture_name(s->picture), filter_name(s->filter), look_name(s->look), look_name(s->pad_look), theme_name(s->theme), layout_name(s->layout), s->rom_folder, s->rom_drive, s->last_game,
 	                recent, s->rumble[0] ? "on" : "off", s->rumble[1] ? "on" : "off", s->rumble[2] ? "on" : "off",
 	                s->rumble[3] ? "on" : "off", s->auto_resume ? "on" : "off",
 	                g_start_key[s->start_on >= 0 && s->start_on < STARTS ? s->start_on : START_RECENT]);
