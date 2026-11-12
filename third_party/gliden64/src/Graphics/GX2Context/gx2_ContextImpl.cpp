@@ -1773,10 +1773,14 @@ private:
 
 	// The TV look's shader (crtBuffer). The frame doubles each of the N64's
 	// lines (480 rows for 240), so a line is two source rows: each output row
-	// takes its line's color (sampled at the line's middle) and a gaussian
-	// beam across the line, wider for bright colors, darkens the gap between
-	// lines. The brightness the gaps take is made up, and a light aperture
-	// grille (R, G, B a little stronger in turn, column by column) goes over it.
+	// takes its line's color (sampled at the line's middle) and a beam across
+	// the line, 1 at its middle and `edge` at its borders (a parabola), wider
+	// (brighter borders) for bright colors. `gain` makes up exactly what the
+	// beam takes on average (1/3 of 1 - edge), so a line keeps its brightness
+	// and only the scanlines' shape shows; the light aperture grille (R, G, B a
+	// little stronger in turn, column by column) is made up the same way. The
+	// first version (a gaussian, made up by hand) left two of a line's three
+	// TV rows at half (55 against 27 in a dark scene), too dark (2026-11-12).
 	// At 720p a line is 3 TV rows; at 1080p the copy to the scan buffer
 	// stretches 720 to 1080.
 	bool createCrtProgram() {
@@ -1795,12 +1799,14 @@ private:
 			"  highp float d = y - line - 0.5;\n"
 			"  vec3 c = texture(uTex0, vec2(vUV.x, (line + 0.5) / lines)).rgb;\n"
 			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
-			"  float w = mix(0.24, 0.42, lum);\n"
-			"  float beam = exp(-0.5 * d * d / (w * w));\n"
-			"  vec3 o = c * beam * mix(1.45, 1.15, lum);\n"
+			"  float edge = mix(0.45, 0.75, lum);\n"
+			"  float t = 2.0 * d;\n"
+			"  float beam = 1.0 - (1.0 - edge) * t * t;\n"
+			"  float gain = 1.0 / (1.0 - (1.0 - edge) / 3.0);\n"
+			"  vec3 o = c * beam * gain;\n"
 			"  float m = mod(floor(gl_FragCoord.x), 3.0);\n"
-			"  vec3 mask = vec3(0.88) + 0.12 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
-			"  o *= mask * 1.06;\n"
+			"  vec3 mask = vec3(0.9) + 0.1 * vec3(step(m, 0.5), step(0.5, m) * step(m, 1.5), step(1.5, m));\n"
+			"  o *= mask * (1.0 / 0.9333);\n"
 			"  fragColor = vec4(min(o, vec3(1.0)), 1.0);\n"
 			"}\n";
 		const GLuint v = glCreateShader(GL_VERTEX_SHADER);
