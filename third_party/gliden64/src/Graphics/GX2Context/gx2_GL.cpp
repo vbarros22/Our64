@@ -815,6 +815,12 @@ void APIENTRY glLinkProgram(GLuint program)
 	// plane GLideN64 clips only in NoNearPlaneClipping on OpenGL).
 	if (our64_gx2_debug != nullptr && strstr(our64_gx2_debug, "noclipdist"))
 		replaceAll(j->vs, "gl_ClipDistance[0] = gl_Position.w - gl_Position.z;", "");
+	// "vshighp": every value in the vertex shader highp. The texture
+	// coordinates are made there (calcTexCoord, mediump in the fast builder);
+	// rw2/hplow/hpmed only change the fragment shader. For seams along polygon
+	// edges in Majora's Mask (trees, the pause pages), 2026-11-11.
+	if (our64_gx2_debug != nullptr && strstr(our64_gx2_debug, "vshighp"))
+		j->vs = highpEverywhere(j->vs);
 	const bool early = (our64_gx2_debug != nullptr && strstr(our64_gx2_debug, "earlydiscard") != nullptr) ||
 		keepDiscardsInPlace(RSP.romname);
 	std::string psText = debugRewrite(*psSource);
