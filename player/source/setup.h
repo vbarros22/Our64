@@ -32,6 +32,8 @@ int  settings_event(settings_ui *s, int event, int target);
 const char *settings_row_name(int row);
 const char *settings_row_about(const settings_ui *s); /* the line under the rows */
 void settings_row_rect(int row, int r[4]);
+void rows_rect(int rows, int row, int r[4]);              /* a page of `rows` rows: tighter past 4 */
+void rows_value_rect(int rows, int row, int i, int r[4]);
 void settings_value_rect(int row, int i, int r[4]); /* kept: the value pages' boxes */
 int  settings_hit(int x, int y);               /* the row, or -1 */
 int  settings_legend(const settings_ui *s, int type, pause_key *keys, int max);

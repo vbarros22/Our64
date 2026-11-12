@@ -36,6 +36,17 @@ static void settings_rows_are_four_pages(void)
 	CHECK(settings_event(&s, PEV_LEFT, -1) == SACT_NONE && settings_event(&s, PEV_BACK, -1) == SACT_BACK);
 	int r[4];
 	settings_row_rect(SET_GAMES, r);
+	/* five rows: the fifth and the line under it stay above the legend bar (412) */
+	{
+		int last[4], under[4], four[4], old[4];
+		rows_rect(PIC_ROWS, PIC_ROWS - 1, last);
+		rows_rect(PIC_ROWS, PIC_ROWS, under);
+		CHECK(last[1] + last[3] <= under[1] && under[1] + 24 <= 412);
+		rows_rect(4, 3, four);
+		settings_row_rect(3, old);
+		CHECK(four[1] == old[1] && four[3] == old[3]); /* four rows: as before */
+	}
+
 	settings_event(&s, PEV_TOUCH_DOWN, settings_hit(r[0] + 5, r[1] + 5));
 	CHECK(settings_event(&s, PEV_TOUCH_UP, settings_hit(r[0] + 5, r[1] + 5)) == SACT_NONE && s.row == SET_GAMES);
 	settings_event(&s, PEV_TOUCH_DOWN, settings_hit(r[0] + 5, r[1] + 5));

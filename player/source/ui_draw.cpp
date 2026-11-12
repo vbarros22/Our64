@@ -1446,16 +1446,17 @@ void value_rows(int rows, int sel, const char * (*name)(int), int (*values)(int)
 {
 	for (int row = 0; row < rows; row++) {
 		int r[4];
-		settings_row_rect(row, r);
+		rows_rect(rows, row, r);
 		selectable(r[0], r[1], r[2], r[3], sel == row, false, 5, 10);
-		text(r[0] + 20, r[1] + 12, name(row), 26, card_ink(sel == row, false));
+		const int inset = (r[3] - 26) / 2 - 2; // 12 in a row of 54
+		text(r[0] + 20, r[1] + inset, name(row), 26, card_ink(sel == row, false));
 		if (page[row]) {
-			text(r[0] + r[2] - 24, r[1] + 11, ">", 28, card_muted(sel == row), GUI_TEXT_JUSTIFY_RIGHT);
+			text(r[0] + r[2] - 24, r[1] + inset - 1, ">", 28, card_muted(sel == row), GUI_TEXT_JUSTIFY_RIGHT);
 			continue;
 		}
 		for (int i = 0; i < values(row); i++) {
 			int vr[4];
-			settings_value_rect(row, i, vr);
+			rows_value_rect(rows, row, i, vr);
 			const bool picked = pick[row] == i, dead = off != nullptr && off(row, i);
 			if (picked)
 				box(vr[0] - 3, vr[1] - 3, vr[2] + 6, vr[3] + 6, rgb(T.panel.fill), 24);
@@ -1463,7 +1464,7 @@ void value_rows(int rows, int sel, const char * (*name)(int), int (*values)(int)
 			char label[48];
 			snprintf(label, sizeof(label), "%s%s", i == in_use[row] ? "✓ " : "", value(row, i));
 			const our_surface & on = i == in_use[row] ? T.panel : T.bar;
-			text(vr[0] + vr[2] / 2, vr[1] + 11, label, fit(label, 20, 14, vr[2] - 24), dead ? rgb(theme_off(&on)) : rgb(on.ink),
+			text(vr[0] + vr[2] / 2, vr[1] + (vr[3] - 20) / 2 - 1, label, fit(label, 20, 14, vr[2] - 24), dead ? rgb(theme_off(&on)) : rgb(on.ink),
 			     GUI_TEXT_JUSTIFY_CENTER);
 		}
 	}
@@ -1473,7 +1474,7 @@ void value_rows(int rows, int sel, const char * (*name)(int), int (*values)(int)
 void row_about(int rows, const char * about)
 {
 	int under[4];
-	settings_row_rect(rows, under);
+	rows_rect(rows, rows, under);
 	text(40, under[1] + 4, about, fit(about, 19, 14, UI_W - 80), rgb(T.screen.muted));
 }
 

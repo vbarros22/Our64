@@ -100,21 +100,33 @@ const char *settings_row_about(const settings_ui *s)
 #define SROW_H 54
 #define SROW_STEP 62
 
-void settings_row_rect(int row, int r[4])
+/* A page of more than 4 rows (Picture, 2026-11-12) has them a little lower and
+ * closer, so the fifth and the line under it stay above the legend bar (412). */
+#define SROW_Y_TIGHT 122
+#define SROW_H_TIGHT 46
+#define SROW_STEP_TIGHT 52
+
+void rows_rect(int rows, int row, int r[4])
 {
+	const int tight = rows > 4;
 	r[0] = SROW_X;
-	r[1] = SROW_Y + row * SROW_STEP;
+	r[1] = (tight ? SROW_Y_TIGHT : SROW_Y) + row * (tight ? SROW_STEP_TIGHT : SROW_STEP);
 	r[2] = SROW_W;
-	r[3] = SROW_H;
+	r[3] = tight ? SROW_H_TIGHT : SROW_H;
 }
 
-void settings_value_rect(int row, int i, int r[4])
+void rows_value_rect(int rows, int row, int i, int r[4])
 {
+	rows_rect(rows, row, r);
 	r[0] = 282 + i * 176;
-	r[1] = SROW_Y + row * SROW_STEP + 5;
+	r[1] += 5;
 	r[2] = 168;
-	r[3] = SROW_H - 10;
+	r[3] -= 10;
 }
+
+void settings_row_rect(int row, int r[4]) { rows_rect(4, row, r); }
+
+void settings_value_rect(int row, int i, int r[4]) { rows_value_rect(4, row, i, r); }
 
 int settings_hit(int x, int y)
 {
@@ -267,11 +279,11 @@ int picture_hit(int x, int y)
 	int r[4];
 	for (int row = 0; row < PIC_ROWS; row++) {
 		for (int i = 0; i < picture_values(row); i++) {
-			settings_value_rect(row, i, r);
+			rows_value_rect(PIC_ROWS, row, i, r);
 			if (inside(x, y, r))
 				return row * 8 + i + 1;
 		}
-		settings_row_rect(row, r);
+		rows_rect(PIC_ROWS, row, r);
 		if (inside(x, y, r))
 			return row * 8;
 	}
