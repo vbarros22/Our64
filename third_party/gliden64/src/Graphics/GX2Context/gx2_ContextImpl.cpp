@@ -1787,8 +1787,9 @@ private:
 	// TV rows at half (55 against 27 in a dark scene), too dark (2026-11-12).
 	// At 720p a line is 3 TV rows; at 1080p the copy to the scan buffer
 	// stretches 720 to 1080. Soft CRT (after the Switch 2's N64 filter, from a
-	// screenshot of it, 2026-11-12): the line's color blurred across about three
-	// N64 pixels (taps 0.75 and 1.5 N64 pixels out), red and blue a little apart (composite-like
+	// screenshot of it, 2026-11-12): the line's color blurred across about two
+	// N64 pixels (taps 0.5 and 1 N64 pixel out, most weight in the middle: the
+	// first, three pixels wide, made the dialogue hard to read on a TV), red and blue a little apart (composite-like
 	// fringes), a little of the next line toward the line's borders, softer
 	// scanlines, and the 4:3 picture's corners rounded and darkened.
 	bool createCrtProgram(int _soft) {
@@ -1808,15 +1809,15 @@ private:
 			"  float t = 2.0 * d;\n"
 			"#if SOFT\n"
 			"  highp float px = 1.0 / size.x;\n"
-			"  vec3 c = texture(uTex0, vec2(vUV.x - 3.0 * px, vy)).rgb * 0.12\n"
-			"         + texture(uTex0, vec2(vUV.x - 1.5 * px, vy)).rgb * 0.22\n"
-			"         + texture(uTex0, vec2(vUV.x, vy)).rgb * 0.32\n"
-			"         + texture(uTex0, vec2(vUV.x + 1.5 * px, vy)).rgb * 0.22\n"
-			"         + texture(uTex0, vec2(vUV.x + 3.0 * px, vy)).rgb * 0.12;\n"
-			"  c.r = mix(c.r, texture(uTex0, vec2(vUV.x - 2.0 * px, vy)).r, 0.35);\n"
-			"  c.b = mix(c.b, texture(uTex0, vec2(vUV.x + 2.0 * px, vy)).b, 0.35);\n"
+			"  vec3 c = texture(uTex0, vec2(vUV.x - 2.0 * px, vy)).rgb * 0.06\n"
+			"         + texture(uTex0, vec2(vUV.x - px, vy)).rgb * 0.20\n"
+			"         + texture(uTex0, vec2(vUV.x, vy)).rgb * 0.48\n"
+			"         + texture(uTex0, vec2(vUV.x + px, vy)).rgb * 0.20\n"
+			"         + texture(uTex0, vec2(vUV.x + 2.0 * px, vy)).rgb * 0.06;\n"
+			"  c.r = mix(c.r, texture(uTex0, vec2(vUV.x - px, vy)).r, 0.25);\n"
+			"  c.b = mix(c.b, texture(uTex0, vec2(vUV.x + px, vy)).b, 0.25);\n"
 			"  vec3 nb = texture(uTex0, vec2(vUV.x, clamp(vy + sign(d) / lines, 0.0, 1.0))).rgb;\n"
-			"  c = mix(c, nb, 0.3 * abs(t));\n"
+			"  c = mix(c, nb, 0.15 * abs(t));\n"
 			"  float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
 			"  float edge = mix(0.55, 0.8, lum);\n"
 			"#else\n"
