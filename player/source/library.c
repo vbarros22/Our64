@@ -30,6 +30,11 @@ int library_header(const unsigned char *first64, unsigned long size, library_rom
 	r->crc1 = be32(h + 16);
 	r->crc2 = be32(h + 20);
 	r->country = (char)h[62];
+	memcpy(r->code, h + 59, 4);
+	r->code[4] = 0;
+	for (int i = 0; i < 4; i++)
+		if (!isalnum(h[59 + i]))
+			r->code[0] = 0; /* not a game code: no lookup by it */
 	saves_game_id(r->id, sizeof(r->id), h + 32, r->crc1);
 	return 0;
 }

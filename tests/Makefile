@@ -49,9 +49,9 @@ $(BUILD)/test_tpak: test_tpak.c ../player/source/tpak.c ../player/source/tpak.h
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) -I../third_party/minilzo -o $@ test_tpak.c ../player/source/tpak.c ../third_party/minilzo/minilzo.c
 
-$(BUILD)/test_covers: test_covers.c ../player/source/covers.c ../player/source/covers.h ../player/source/covertitles.c ../player/source/covertitles_find.c ../player/source/covertitles.h
+$(BUILD)/test_covers: test_covers.c ../player/source/covers.c ../player/source/covers.h ../player/source/covertitles.c ../player/source/covertitles_find.c ../player/source/covertitles.h ../player/source/covercodes.c
 	@mkdir -p $(BUILD)
-	$(CC) $(CFLAGS) -o $@ test_covers.c ../player/source/covers.c ../player/source/covertitles.c ../player/source/covertitles_find.c
+	$(CC) $(CFLAGS) -o $@ test_covers.c ../player/source/covers.c ../player/source/covertitles.c ../player/source/covertitles_find.c ../player/source/covercodes.c
 
 $(BUILD)/test_gameopt: test_gameopt.c ../player/source/gameopt.c ../player/source/gameopt.h
 	@mkdir -p $(BUILD)
@@ -105,7 +105,7 @@ $(BUILD)/test_usbfs: test_usbfs.c usbfs_diskio_file.c ../player/source/usbfs.c .
 # Every screen drawn on the PC with the console's drawing code and font: results/shots.
 LIBGUI	:=	../third_party/libgui/source
 SHOTS_GUI :=	libgui/GuiGeometry libgui/GuiPaint libgui/GuiTextRenderer libgui/GuiMeshCache drivers/Mutex
-SHOTS_C	:=	pause.c prompt.c setup.c input.c library.c notices.c saves.c gamedb.c states.c theme.c covers.c
+SHOTS_C	:=	pause.c prompt.c setup.c input.c library.c notices.c saves.c gamedb.c states.c theme.c covers.c covertitles.c covertitles_find.c covercodes.c
 SHOTS_FLAGS :=	-O1 -g -I../player/source -I$(LIBGUI) -I$(LIBGUI)/libgui $(shell pkg-config --cflags freetype2 libpng)
 $(BUILD)/ui_shots: ui_shots.cpp ../player/source/ui_draw.cpp ../player/source/ui_draw.h ../player/source/ui.h \
 		$(addprefix ../player/source/,$(SHOTS_C)) $(addprefix $(LIBGUI)/,$(addsuffix .cpp,$(SHOTS_GUI)))

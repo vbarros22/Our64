@@ -185,14 +185,12 @@ static int png_whole(const char *path, const unsigned char *p, unsigned n)
 
 static int one_game(const covers_game *gm, const struct sockaddr_in *addr)
 {
-	char path[400], title[256], second[256];
+	char path[400], title[256];
+	static char titles[COVERS_TITLES][256]; /* the fetch thread's only */
 	snprintf(path, sizeof(path), "%s/art/%s.png", g_root, gm->id);
 	struct stat st;
-	const char *table = covertitles_find(gm->crc1, gm->crc2, gm->country);
-	if (table)
-		snprintf(title, sizeof(title), "%s", table);
-	else
-		covers_file_title(gm->file, title, sizeof(title));
+	const int n_titles = covers_titles(gm, titles);
+	snprintf(title, sizeof(title), "%s", n_titles ? titles[0] : gm->file);
 	if (!stat(path, &st)) { /* a cover already on the card is never replaced, unless it can't be drawn */
 		if (png_whole(path, NULL, 0)) {
 			report_line("COVERS: %s: already on the card", title);
@@ -204,9 +202,10 @@ static int one_game(const covers_game *gm, const struct sockaddr_in *addr)
 			return GAME_WRITE_FAILED;
 	}
 	unsigned body = 0, body_n = 0;
-	int r = download(title, addr, &body, &body_n);
-	if (r == COVERS_NOT_FOUND && covers_second_title(table, gm->file, second, sizeof(second))) {
-		snprintf(title, sizeof(title), "%s", second);
+	/* each title until one is not a 404 (2026-11-13: by CRCs, game code, title, file name) */
+	int r = COVERS_NOT_FOUND;
+	for (int t = 0; t < n_titles && r == COVERS_NOT_FOUND; t++) {
+		snprintf(title, sizeof(title), "%s", titles[t]);
 		r = download(title, addr, &body, &body_n);
 	}
 	if (r == GAME_STOPPED)

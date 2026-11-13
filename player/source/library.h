@@ -13,6 +13,7 @@ extern "C" {
 typedef struct {
 	uint32_t crc1, crc2;
 	char country;
+	char code[5]; /* the game code, header bytes 0x3B-0x3E ("NZSE"): covers */
 	char id[64];  /* saves_game_id: header name + CRC1, what saves and states follow */
 } library_rom;
 

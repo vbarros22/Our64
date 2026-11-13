@@ -1,6 +1,7 @@
 /* Our64 player: box art from libretro-thumbnails, the portable parts (see
  * covers.h). Plain C. */
 #include "covers.h"
+#include "covertitles.h"
 #include "version.h"
 
 #include <stdio.h>
@@ -260,4 +261,27 @@ void covers_summary(int result, int stopped, int saved, int not_found, int faile
 	} else {
 		snprintf(out, size, "No covers found.");
 	}
+}
+
+static int add_title(char out[COVERS_TITLES][256], int n, const char *t)
+{
+	if (!t || !t[0] || n >= COVERS_TITLES || strlen(t) >= 256)
+		return n;
+	for (int i = 0; i < n; i++)
+		if (!strcmp(out[i], t))
+			return n;
+	snprintf(out[n], 256, "%s", t);
+	return n + 1;
+}
+
+int covers_titles(const covers_game *g, char out[COVERS_TITLES][256])
+{
+	char file[256];
+	int n = 0;
+	covers_file_title(g->file, file, sizeof(file));
+	n = add_title(out, n, covertitles_find(g->crc1, g->crc2, g->country));
+	n = add_title(out, n, g->code[0] ? covertitles_by_code(g->code) : NULL);
+	n = add_title(out, n, covertitles_by_title(file, g->country));
+	n = add_title(out, n, file);
+	return n;
 }

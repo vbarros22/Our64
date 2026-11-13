@@ -244,6 +244,60 @@ static void test_second_title(void)
 	CHECK(out[0] == 0);
 }
 
+static covers_game game(uint32_t crc1, uint32_t crc2, char country, const char *code, const char *file)
+{
+	covers_game g;
+	memset(&g, 0, sizeof g);
+	g.crc1 = crc1;
+	g.crc2 = crc2;
+	g.country = country;
+	snprintf(g.code, sizeof g.code, "%s", code);
+	snprintf(g.file, sizeof g.file, "%s", file);
+	return g;
+}
+
+/* 2026-11-13, Vinicius's card: five changed ROMs (CRCs in no table) fetched no
+ * cover. The game code and the file's title find each one's name now. */
+static void test_titles(void)
+{
+	char t[COVERS_TITLES][256];
+	CHECK(covertitles_by_code("NZSE") && !strcmp(covertitles_by_code("NZSE"), "Legend of Zelda, The - Majora's Mask (USA)"));
+	CHECK(covertitles_by_code("ZZZZ") == NULL && covertitles_by_code(NULL) == NULL);
+	for (unsigned i = 1; i < covercodes_count; i++)
+		CHECK(strncmp(covercodes[i - 1].code, covercodes[i].code, 4) < 0);
+	for (unsigned i = 0; i < covercodes_count; i++)
+		CHECK(covertitles_by_code(covercodes[i].code) == covercodes[i].name);
+
+	covers_game g = game(0x72B277B8, 0xF771F9A1, 'E', "NZSE", "The Legend of Zelda - Majora's Mask.z64");
+	int n = covers_titles(&g, t);
+	CHECK(n == 2 && !strcmp(t[0], "Legend of Zelda, The - Majora's Mask (USA)") && !strcmp(t[1], "The Legend of Zelda - Majora's Mask"));
+	g = game(0x65825A56, 0xCC1B70D0, 'E', "CZLE", "The Legend of Zelda - Ocarina of Time.z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 2 && !strcmp(t[0], "Legend of Zelda, The - Ocarina of Time (USA)"));
+	g = game(0xC16C421B, 0xA21580F7, 'E', "NDQE", "Disney's Donald Duck - Goin' Quackers.z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 2 && !strcmp(t[0], "Donald Duck - Goin' Quackers (USA) (En,Fr,De,Es,It)"));
+	g = game(0x67C38660, 0x94038DC6, 'P', "NF2P", "F-1 World Grand Prix II.z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 2 && !strcmp(t[0], "F-1 World Grand Prix II (Europe) (En,Fr,De,Es)"));
+	/* a translation that changed the code too (NEDJ, the cart's is NEVJ): by its title */
+	g = game(0x9748C4C5, 0x2806585F, 'J', "NEDJ", "Neon Genesis Evangelion.z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 2 && !strcmp(t[0], "Neon Genesis Evangelion (Japan)") && !strcmp(t[1], "Neon Genesis Evangelion"));
+	/* a known ROM: its CRCs' name first, nothing tried twice */
+	g = game(0x635A2BFF, 0x8B022326, 'E', "NSME", "Super Mario 64 (USA).z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 1 && !strcmp(t[0], "Super Mario 64 (USA)"));
+	/* the title: the country's region and fewer tags first, either article */
+	CHECK(!strcmp(covertitles_by_title("Legend of Zelda, The - Ocarina of Time", 'P'), "Legend of Zelda, The - Ocarina of Time (Europe) (En,Fr,De)"));
+	CHECK(!strcmp(covertitles_by_title("the legend of zelda ocarina of time (U) [!]", 'E'), "Legend of Zelda, The - Ocarina of Time (USA)"));
+	CHECK(covertitles_by_title("Nothing Like It 64", 'E') == NULL && covertitles_by_title("(USA)", 'E') == NULL);
+	/* nothing known: the file's own name */
+	g = game(1, 2, 'E', "", "My Hack.z64");
+	n = covers_titles(&g, t);
+	CHECK(n == 1 && !strcmp(t[0], "My Hack"));
+}
+
 static void summary(int result, int stopped, int saved, int not_found, int failed, const char *want)
 {
 	char out[128];
@@ -297,6 +351,7 @@ int main(void)
 	test_outcomes();
 	test_server_gone();
 	test_second_title();
+	test_titles();
 	test_summary();
 	if (!g_failed)
 		printf("  all passed\n");

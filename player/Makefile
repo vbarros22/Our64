@@ -70,7 +70,7 @@ OFILES		:=	$(addprefix $(BUILD)/not64/,$(NOT64_SRC:.c=.o)) \
 			$(BUILD)/source/main.o $(BUILD)/source/plugins.o $(BUILD)/source/audio.o $(BUILD)/source/video.o \
 			$(BUILD)/source/alloc_stats.o $(BUILD)/source/saves.o $(BUILD)/source/saves_wiiu.o $(BUILD)/source/states.o $(BUILD)/source/states_wiiu.o $(BUILD)/source/writer.o $(BUILD)/source/input.o $(BUILD)/source/input_wiiu.o \
 			$(BUILD)/source/prompt.o $(BUILD)/source/notices.o $(BUILD)/source/ui_wiiu.o $(BUILD)/source/tv_pass.o $(BUILD)/source/ui_draw.o $(BUILD)/source/theme.o $(BUILD)/source/pause.o $(BUILD)/source/pause_wiiu.o \
-			$(BUILD)/source/library.o $(BUILD)/source/library_wiiu.o $(BUILD)/source/setup.o $(BUILD)/source/setup_wiiu.o $(BUILD)/source/gamedb.o $(BUILD)/source/covertitles.o $(BUILD)/source/covertitles_find.o $(BUILD)/source/covers.o $(BUILD)/source/covers_wiiu.o $(BUILD)/source/gameopt.o $(BUILD)/source/keyboard_wiiu.o \
+			$(BUILD)/source/library.o $(BUILD)/source/library_wiiu.o $(BUILD)/source/setup.o $(BUILD)/source/setup_wiiu.o $(BUILD)/source/gamedb.o $(BUILD)/source/covertitles.o $(BUILD)/source/covertitles_find.o $(BUILD)/source/covercodes.o $(BUILD)/source/covers.o $(BUILD)/source/covers_wiiu.o $(BUILD)/source/gameopt.o $(BUILD)/source/keyboard_wiiu.o \
 			$(BUILD)/source/tpak.o $(BUILD)/source/tpak_wiiu.o $(BUILD)/source/mocha_wiiu.o $(BUILD)/source/usbfs.o $(BUILD)/source/usbfs_wiiu.o $(BUILD)/source/cpuprof.o $(BUILD)/minilzo.o $(BUILD)/cxd4.o $(BUILD)/source/gb_tower_hle.o \
 			$(BUILD)/replay/core_wiiu.o \
 			$(addprefix $(BUILD)/gliden64/,$(GLIDEN64_CORE:.cpp=.o) $(GLIDEN64_C:.c=.o))

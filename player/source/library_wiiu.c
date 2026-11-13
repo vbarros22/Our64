@@ -439,6 +439,7 @@ int library_missing_list(covers_game *out, int max, int (*reading)(int read, int
 			c->crc1 = g->rom.crc1;
 			c->crc2 = g->rom.crc2;
 			c->country = g->rom.country;
+			snprintf(c->code, sizeof(c->code), "%s", g->rom.code);
 			snprintf(c->file, sizeof(c->file), "%s", g->file);
 		}
 		n++;

@@ -79,8 +79,17 @@ typedef struct {
 	char id[64];      /* library_rom.id: the cover is <root>/art/<id>.png */
 	uint32_t crc1, crc2;
 	char country;
+	char code[5];     /* the header's game code ("NZSE"), "" when unknown */
 	char file[128];   /* the ROM's file name: the second title */
 } covers_game;
+
+/* The titles to try for a game, in order, each once (2026-11-13): the name
+ * its header CRCs have (covertitles_find), the name its game code has (a
+ * translated or patched ROM keeps the code), a name whose title is its file
+ * name's (covertitles_by_title), and last the file name itself. The first
+ * that is not a 404 is the cover. The count (at least 1 with a file name). */
+#define COVERS_TITLES 4
+int covers_titles(const covers_game *g, char out[COVERS_TITLES][256]);
 
 /* ---- On the console (covers_wiiu.c): one fetch at a time, on a thread of
  * its own; every call below is the menu thread's ---- */
