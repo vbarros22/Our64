@@ -7,8 +7,9 @@
  * native: the game draws at its own resolution, most often 320x240 (GLideN64's
  * native resolution factor; 2026-11-13: Automobili Lamborghini's letters and
  * F-1 World Grand Prix's menu line are right with it, as on the N64), and the
- * picture is enlarged after. 720p: the game draws at 720 lines (480 without
- * it). 720p is never chosen
+ * picture is enlarged after. It is the default in this fork (2026-11-13): a
+ * game with no line draws native, and 480p is written when chosen (the 640x480
+ * window). 720p: the game draws at 720 lines. 720p is never chosen
  * for the player: 5 of 16 games tested held their speed with it
  * (results/res720-2026-11-11, light-2026-11-11). mode, shape, speed: this
  * game's own Screen mode (MODE_), Shape (PICTURE_) and Speed display (0 off,

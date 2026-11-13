@@ -543,7 +543,7 @@ const char *options_row_name(int row) { return row >= 0 && row < OPT_ROWS ? g_op
 void options_open(options_ui *o, int lines, int picture_set, int cover, int can_delete, int delete_off, int paused)
 {
 	memset(o, 0, sizeof(*o));
-	o->lines = lines == 720 || lines == GAMEOPT_NATIVE ? lines : 480;
+	o->lines = lines == 720 || lines == 480 ? lines : GAMEOPT_NATIVE;
 	o->picture_set = picture_set;
 	o->cover = cover;
 	o->can_delete = can_delete;

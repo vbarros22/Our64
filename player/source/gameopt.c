@@ -18,11 +18,13 @@ static int find(const char *file)
 	return -1;
 }
 
-static int norm_lines(int lines) { return lines == 720 || lines == GAMEOPT_NATIVE ? lines : 480; }
+/* Our64 fork (2026-11-13): Native is the default, so a game with no entry
+ * draws at its own resolution; 480p and 720p are stored when chosen. */
+static int norm_lines(int lines) { return lines == 720 || lines == 480 ? lines : GAMEOPT_NATIVE; }
 
 static int is_default(int i)
 {
-	if (g_opt[i].lines != 480)
+	if (g_opt[i].lines != GAMEOPT_NATIVE)
 		return 0;
 	for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++)
 		if (g_opt[i].pic[k] >= 0)
@@ -35,7 +37,7 @@ static int add(const char *file)
 	if (g_n >= GAMEOPT_MAX || !file[0] || strlen(file) >= sizeof(g_opt[0].file) || strchr(file, '\t') || strchr(file, '\n'))
 		return -1;
 	snprintf(g_opt[g_n].file, sizeof(g_opt[g_n].file), "%s", file);
-	g_opt[g_n].lines = 480;
+	g_opt[g_n].lines = GAMEOPT_NATIVE;
 	for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++)
 		g_opt[g_n].pic[k] = -1;
 	return g_n++;
@@ -67,6 +69,8 @@ void gameopt_parse(const char *text)
 				*next++ = 0;
 			if (!strcmp(w, "720p"))
 				g_opt[i].lines = 720;
+			else if (!strcmp(w, "480p"))
+				g_opt[i].lines = 480;
 			else if (!strcmp(w, "native"))
 				g_opt[i].lines = GAMEOPT_NATIVE;
 			for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++) {
@@ -105,8 +109,8 @@ int gameopt_text(char *out, unsigned size)
 		int n = snprintf(line, sizeof(line), "%s", g_opt[i].file);
 		if (g_opt[i].lines == 720)
 			n += snprintf(line + n, sizeof(line) - (size_t)n, "\t720p");
-		else if (g_opt[i].lines == GAMEOPT_NATIVE)
-			n += snprintf(line + n, sizeof(line) - (size_t)n, "\tnative");
+		else if (g_opt[i].lines == 480)
+			n += snprintf(line + n, sizeof(line) - (size_t)n, "\t480p");
 		for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++)
 			if (g_opt[i].pic[k] >= 0)
 				n += snprintf(line + n, sizeof(line) - (size_t)n, "\t%s%d", g_key[k], g_opt[i].pic[k]);
@@ -123,14 +127,14 @@ int gameopt_text(char *out, unsigned size)
 int gameopt_lines(const char *file)
 {
 	const int i = file ? find(file) : -1;
-	return i >= 0 ? norm_lines(g_opt[i].lines) : 480;
+	return i >= 0 ? norm_lines(g_opt[i].lines) : GAMEOPT_NATIVE;
 }
 
 int gameopt_set_lines(const char *file, int lines)
 {
 	int i = find(file);
 	if (i < 0) {
-		if (norm_lines(lines) == 480)
+		if (norm_lines(lines) == GAMEOPT_NATIVE)
 			return 0;
 		if ((i = add(file)) < 0)
 			return -1;

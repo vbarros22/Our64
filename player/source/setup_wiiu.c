@@ -1169,7 +1169,7 @@ int game_options_run(const char *file, const char *title, int glyphs, int paused
 					snprintf(body, sizeof(body), "%s%s", lines == 720 ? "Many games slow down or stutter with it." : "", restart);
 					const int ok = (lines != 720 && !paused) ||
 					               player_ask(lines == 720 ? "Use 720p for this game?" : lines == GAMEOPT_NATIVE ? "Use Native for this game?"
-					                          : "Go back to 480p?", body[0] == ' ' ? body + 1 : body,
+					                          : "Use 480p for this game?", body[0] == ' ' ? body + 1 : body,
 					                          lines == 720 ? "Use 720p" : "Restart");
 					if (ok) {
 						options_set_lines(o, file, lines);
