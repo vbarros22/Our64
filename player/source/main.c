@@ -1853,6 +1853,12 @@ static int play_game(int index)
 	if (!strncmp((const char *)ROM_HEADER.Name, "BANJO TOOIE", 11) ||
 	    !strncmp((const char *)ROM_HEADER.Name, "BANJO KAZOOIE 2", 15))
 		cpo = 1;
+	/* Nightmare Creatures: at factor 2 it drew 569 game frames in 3,241 VIs
+	 * (about 10.5 a second) at 60 VIs a second and played with heavy lag; with
+	 * factor 1 (the count-per-op switch) it played smoothly (Vinicius on the
+	 * console, 2026-11-12; 1.2.0 still lags). */
+	if (!strncmp((const char *)ROM_HEADER.Name, "NIGHTMARE CREATURES", 19))
+		cpo = 1;
 	/* Castlevania and Legacy of Darkness ("CASTLEVANIA2") swap code overlays
 	 * at 0x0F000000 that begin with the same instructions: the recompiler
 	 * checks whole functions there (Wrappers.c), or the main thread runs an old

@@ -450,7 +450,9 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 		current.negativeY = info.negativeY;
 		current.fast3DPersp = info.fast3DPerspNorm;
 		current.f3dex3.legacyVertexPipeline = info.legacyVertexPipeline;
-		LOG(LOG_VERBOSE, "Load microcode type: %d crc: 0x%08x romname: %s", current.type, uc_crc, RSP.romname);
+		// Our64: at WARNING, so the public log names each microcode a game loads
+		// (once each): an unknown GBI command most often means the wrong one.
+		LOG(LOG_WARNING, "Load microcode type: %d crc: 0x%08x romname: %s", current.type, uc_crc, RSP.romname);
 		_makeCurrent(&current);
 		return;
 	}
@@ -505,7 +507,7 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 			current.f3dex3.branchOnZ = features.find("brz") != features.end();
 			current.f3dex3.version = version;
 
-			LOG(LOG_VERBOSE, "Load microcode (%s) type: %d crc: 0x%08x romname: %s\n", uc_str, current.type, uc_crc, RSP.romname);
+			LOG(LOG_WARNING, "Load microcode (%s) type: %d crc: 0x%08x romname: %s", uc_str, current.type, uc_crc, RSP.romname);
 			_makeCurrent(&current);
 			return;
 		}
@@ -591,7 +593,7 @@ void GBIInfo::loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize)
 
 			if (type != NONE) {
 				current.type = type;
-				LOG(LOG_VERBOSE, "Load microcode (%s) type: %d crc: 0x%08x romname: %s", uc_str, current.type, uc_crc, RSP.romname);
+				LOG(LOG_WARNING, "Load microcode (%s) type: %d crc: 0x%08x romname: %s", uc_str, current.type, uc_crc, RSP.romname);
 				_makeCurrent(&current);
 				return;
 			}
