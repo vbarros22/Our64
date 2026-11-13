@@ -1,5 +1,6 @@
 /* Our64 player: Our Settings, Our Controllers, Change order, Edit buttons (see setup.h). */
 #include "setup.h"
+#include "gameopt.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -542,7 +543,7 @@ const char *options_row_name(int row) { return row >= 0 && row < OPT_ROWS ? g_op
 void options_open(options_ui *o, int lines, int picture_set, int cover, int can_delete, int delete_off, int paused)
 {
 	memset(o, 0, sizeof(*o));
-	o->lines = lines == 720 ? 720 : 480;
+	o->lines = lines == 720 || lines == GAMEOPT_NATIVE ? lines : 480;
 	o->picture_set = picture_set;
 	o->cover = cover;
 	o->can_delete = can_delete;
@@ -592,7 +593,7 @@ int options_event(options_ui *o, int event, int target)
 
 void options_value(const options_ui *o, int row, char *out, unsigned size)
 {
-	snprintf(out, size, "%s", row == OPT_RES ? (o->lines == 720 ? "720p" : "480p")
+	snprintf(out, size, "%s", row == OPT_RES ? (o->lines == 720 ? "720p" : o->lines == GAMEOPT_NATIVE ? "Native" : "480p")
 	                          : row == OPT_PICTURE ? (o->picture_set ? "Custom" : "Default")
 	                          : row == OPT_COVER ? (o->cover == COVER_CUSTOM ? "Custom" : o->cover == COVER_FETCHED ? "Fetched" : "None")
 	                          : "");

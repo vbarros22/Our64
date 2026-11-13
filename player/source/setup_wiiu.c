@@ -817,8 +817,13 @@ static void options_set_lines(options_ui *o, const char *file, int lines)
 		return;
 	}
 	o->lines = lines;
-	report_line("OPTIONS: %s draws at %dp", file, lines);
-	snprintf(g_view.line, sizeof(g_view.line), "Resolution: %dp", lines);
+	if (lines == GAMEOPT_NATIVE) {
+		report_line("OPTIONS: %s draws at its own resolution", file);
+		snprintf(g_view.line, sizeof(g_view.line), "Resolution: Native");
+	} else {
+		report_line("OPTIONS: %s draws at %dp", file, lines);
+		snprintf(g_view.line, sizeof(g_view.line), "Resolution: %dp", lines);
+	}
 }
 
 /* A page of choices over Game options: the row picked, -1 for B, -2 for HOME (confirmed, or the pause menu's). */
@@ -1118,7 +1123,7 @@ static void cover_fetched(options_ui *o, const char *file)
 
 int game_options_run(const char *file, const char *title, int glyphs, int paused, int usb)
 {
-	static const char *const res_names[2] = { "480p", "720p" };
+	static const char *const res_names[3] = { "Native", "480p", "720p" };
 	static const char *const cover_names[2] = { "Fetched cover", "Choose an image" };
 	options_ui *o = &g_view.options;
 	g_from_pause = paused;
@@ -1147,9 +1152,10 @@ int game_options_run(const char *file, const char *title, int glyphs, int paused
 					result = 1;
 				break;
 			case OACT_RES: {
-				const int pick = run_choice("RESOLUTION", "720p is sharper on a TV. Many games slow down with it",
-				                            res_names, 2, o->lines == 720);
-				const int lines = pick == 1 ? 720 : 480;
+				/* Native (2026-11-13): the N64's own resolution, the picture enlarged after. */
+				const int pick = run_choice("RESOLUTION", "Native is the N64's own. 720p is sharper, but many games slow down",
+				                            res_names, 3, o->lines == GAMEOPT_NATIVE ? 0 : o->lines == 720 ? 2 : 1);
+				const int lines = pick == 0 ? GAMEOPT_NATIVE : pick == 2 ? 720 : 480;
 				if (pick == -2) {
 					result = 1;
 				} else if (pick >= 0 && lines != o->lines) {
@@ -1161,8 +1167,9 @@ int game_options_run(const char *file, const char *title, int glyphs, int paused
 					                                                             : " The game restarts from its beginning.";
 					char body[160];
 					snprintf(body, sizeof(body), "%s%s", lines == 720 ? "Many games slow down or stutter with it." : "", restart);
-					const int ok = (lines == 480 && !paused) ||
-					               player_ask(lines == 720 ? "Use 720p for this game?" : "Go back to 480p?", body[0] == ' ' ? body + 1 : body,
+					const int ok = (lines != 720 && !paused) ||
+					               player_ask(lines == 720 ? "Use 720p for this game?" : lines == GAMEOPT_NATIVE ? "Use Native for this game?"
+					                          : "Go back to 480p?", body[0] == ' ' ? body + 1 : body,
 					                          lines == 720 ? "Use 720p" : "Restart");
 					if (ok) {
 						options_set_lines(o, file, lines);

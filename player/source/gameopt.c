@@ -18,9 +18,11 @@ static int find(const char *file)
 	return -1;
 }
 
+static int norm_lines(int lines) { return lines == 720 || lines == GAMEOPT_NATIVE ? lines : 480; }
+
 static int is_default(int i)
 {
-	if (g_opt[i].lines == 720)
+	if (g_opt[i].lines != 480)
 		return 0;
 	for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++)
 		if (g_opt[i].pic[k] >= 0)
@@ -65,6 +67,8 @@ void gameopt_parse(const char *text)
 				*next++ = 0;
 			if (!strcmp(w, "720p"))
 				g_opt[i].lines = 720;
+			else if (!strcmp(w, "native"))
+				g_opt[i].lines = GAMEOPT_NATIVE;
 			for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++) {
 				const size_t kl = strlen(g_key[k]);
 				if (!strncmp(w, g_key[k], kl) && w[kl] >= '0' && w[kl] <= '9' && !w[kl + 1] && w[kl] - '0' <= g_key_max[k])
@@ -101,6 +105,8 @@ int gameopt_text(char *out, unsigned size)
 		int n = snprintf(line, sizeof(line), "%s", g_opt[i].file);
 		if (g_opt[i].lines == 720)
 			n += snprintf(line + n, sizeof(line) - (size_t)n, "\t720p");
+		else if (g_opt[i].lines == GAMEOPT_NATIVE)
+			n += snprintf(line + n, sizeof(line) - (size_t)n, "\tnative");
 		for (int k = 0; k < GAMEOPT_PICTURE_KEYS; k++)
 			if (g_opt[i].pic[k] >= 0)
 				n += snprintf(line + n, sizeof(line) - (size_t)n, "\t%s%d", g_key[k], g_opt[i].pic[k]);
@@ -117,19 +123,19 @@ int gameopt_text(char *out, unsigned size)
 int gameopt_lines(const char *file)
 {
 	const int i = file ? find(file) : -1;
-	return i >= 0 && g_opt[i].lines == 720 ? 720 : 480;
+	return i >= 0 ? norm_lines(g_opt[i].lines) : 480;
 }
 
 int gameopt_set_lines(const char *file, int lines)
 {
 	int i = find(file);
 	if (i < 0) {
-		if (lines != 720)
+		if (norm_lines(lines) == 480)
 			return 0;
 		if ((i = add(file)) < 0)
 			return -1;
 	}
-	g_opt[i].lines = lines == 720 ? 720 : 480;
+	g_opt[i].lines = norm_lines(lines);
 	return 0;
 }
 
